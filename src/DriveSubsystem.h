@@ -2,7 +2,7 @@
 #define _DRIVE_SUBSYSTEM_H
 
 #include <WPILib.h>
-#include <Victor.h>
+#include <CANTalon.h>
 #include <AHRS.h>
 
 #include "RobotSubsystem.h"
@@ -30,10 +30,10 @@ public:
 
 private:
     Joystick* m_joystick;
-    Victor* m_frmotor;
-    Victor* m_flmotor;
-    Victor* m_rrmotor;
-    Victor* m_rlmotor;
+    CANTalon* m_frmotor;
+    CANTalon* m_flmotor;
+    CANTalon* m_rrmotor;
+    CANTalon* m_rlmotor;
     frc::RobotDrive* m_robotDrive;
     AHRS *m_ahrs;
     bool m_fieldAbsolute;
