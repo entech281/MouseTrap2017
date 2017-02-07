@@ -48,10 +48,10 @@ void DriveSubsystem::RobotInit()
     m_rlmotor->SetControlMode(CANSpeedController::kPercentVbus);
     m_rrmotor->SetControlMode(CANSpeedController::kPercentVbus);
 
-    m_robotDrive->SetInvertedMotor(frc::RobotDrive::kFrontLeftMotor, c_kflmotor_inversed);
-    m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearLeftMotor, c_krlmotor_inversed);
-    m_robotDrive->SetInvertedMotor(frc::RobotDrive::kFrontRightMotor, c_kfrmotor_inversed);
-    m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearRightMotor, c_krrmotor_inversed);
+    m_robotDrive->SetInvertedMotor(frc::RobotDrive::kFrontLeftMotor , c_kflmotor_inverted);
+    m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearLeftMotor  , c_krlmotor_inverted);
+    m_robotDrive->SetInvertedMotor(frc::RobotDrive::kFrontRightMotor, c_kfrmotor_inverted);
+    m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearRightMotor , c_krrmotor_inverted);
 
     try {
     	m_ahrs = new AHRS(SerialPort::Port::kUSB);

@@ -15,6 +15,9 @@ public:
 
     void ToggleFieldAbsoluteDriving(void);
     void SetFieldAbsoluteDriving(bool active);
+    void DriveHeading(double angle, double speed, double time);
+    void YawToHeading(double angle);
+    void Done(void);
 
     /********************************** Subsystem Routines **********************************/
     virtual void RobotInit();
