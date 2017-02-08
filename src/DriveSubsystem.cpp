@@ -35,13 +35,18 @@ void DriveSubsystem::RobotInit()
 {
     m_joystick = new Joystick(0);
 
-    m_flmotor = new Victor(c_flmotor_PWMid);
-    m_frmotor = new Victor(c_frmotor_PWMid);
-    m_rlmotor = new Victor(c_rlmotor_PWMid);
-    m_rrmotor = new Victor(c_rrmotor_PWMid);
+    m_flmotor = new CANTalon(c_flmotor_CANid);
+    m_frmotor = new CANTalon(c_frmotor_CANid);
+    m_rlmotor = new CANTalon(c_rlmotor_CANid);
+    m_rrmotor = new CANTalon(c_rrmotor_CANid);
 
     m_robotDrive = new frc::RobotDrive(m_flmotor, m_rlmotor, m_frmotor, m_rrmotor);
     m_robotDrive->SetSafetyEnabled(false);
+
+    m_flmotor->SetControlMode(CANSpeedController::kPercentVbus);
+    m_frmotor->SetControlMode(CANSpeedController::kPercentVbus);
+    m_rlmotor->SetControlMode(CANSpeedController::kPercentVbus);
+    m_rrmotor->SetControlMode(CANSpeedController::kPercentVbus);
 
     m_robotDrive->SetInvertedMotor(frc::RobotDrive::kFrontLeftMotor, c_kflmotor_inversed);
     m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearLeftMotor, c_krlmotor_inversed);
