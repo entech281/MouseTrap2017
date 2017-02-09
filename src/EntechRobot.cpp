@@ -10,6 +10,7 @@
 
 EntechRobot::EntechRobot()
     : m_drive(NULL)
+    , m_climber(NULL)
     , m_lw(NULL)
 {
     m_robotSubsystems.clear();
@@ -21,6 +22,7 @@ void EntechRobot::RobotInit()
 {
     m_lw = frc::LiveWindow::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
+    m_climber = new ClimberSubsystem(this, "climber");
 
 #if USB_CAMERA
     std::thread t_visionThread(VisionThread);
