@@ -3,6 +3,24 @@
 #include "DriveSubsystem.h"
 #include "RobotConstants.h"
 
+const static double kYaw_P = 0.03;
+const static double kYaw_I = 0.0;
+const static double kYaw_D = 0.0;
+const static double kYaw_F = 0.0;
+const static double kYaw_ToleranceDegrees = 2.0;
+
+const static double kLateral_P = 0.03;
+const static double kLateral_I = 0.0;
+const static double kLateral_D = 0.0;
+const static double kLateral_F = 0.0;
+const static double kLateral_TolerancePixels = 2.0;
+
+const static double kDistance_P = 0.03;
+const static double kDistance_I = 0.0;
+const static double kDistance_D = 0.0;
+const static double kDistance_F = 0.0;
+const static double kDistance_TolerancePixels = 2.0;
+
 DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
   : RobotSubsystem(pRobot, name)
   , m_joystick(NULL)
@@ -12,6 +30,9 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
   , m_rlmotor(NULL)
   , m_robotDrive(NULL)
   , m_ahrs(NULL)
+  , m_yawController(NULL)
+  , m_lateralController(NULL)
+  , m_distanceController(NULL)
   , m_fieldAbsolute(false)
   , m_toggleFieldAbsoluteButton(NULL)
 {
@@ -33,7 +54,15 @@ void DriveSubsystem::SetFieldAbsoluteDriving(bool active)
 
 void DriveSubsystem::RobotInit()
 {
-    m_joystick = new Joystick(0);
+    // Try creating the NavX first, to give it time to calibrate
+    try {
+    	m_ahrs = new AHRS(SerialPort::Port::kUSB);
+        DriverStation::ReportWarning("NavX found");
+        m_ahrs->Reset();
+    } catch (std::exception& ex) {
+        DriverStation::ReportError("NavX MISSING");
+        m_ahrs = NULL;
+    }
 
     m_flmotor = new CANTalon(c_flmotor_CANid);
     m_frmotor = new CANTalon(c_frmotor_CANid);
@@ -53,19 +82,48 @@ void DriveSubsystem::RobotInit()
     m_robotDrive->SetInvertedMotor(frc::RobotDrive::kFrontRightMotor, c_kfrmotor_inverted);
     m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearRightMotor , c_krrmotor_inverted);
 
-    try {
-    	m_ahrs = new AHRS(SerialPort::Port::kUSB);
-        DriverStation::ReportError("NavX FOUND");
-        m_ahrs->Reset();
-        if (m_ahrs->IsCalibrating()) {
-            Wait(0.25);
+    // PID Controllers
+    m_ntTable = NetworkTable.GetTable("Vision");
+    m_yawPIDInterface = new PIDInterface(m_ahrs, &m_yawJStwist);
+    m_lateralPIDInterface = new PIDInterface(&m_visionLateral, &m_lateralJS);
+    m_distancePIDInterface = new PIDInterface(&m_visionDistance, &m_forwardJS);
+
+    m_yawController = new frc::PIDController(kYaw_P, kYaw_I, kYaw_F, m_yawPIDInterface, m_yawPIDInterface);
+    m_yawController->SetAbsoluteTolerance(kYaw_ToleranceDegrees);
+    m_yawController->SetInputRange(-180.0, 180.0);
+    m_yawController->SetContinuous(true);
+    m_yawController->SetOutputRange(-1.0, 1.0);
+    m_yawController->Disable();
+
+    m_lateralController = new frc::PIDController(kLateral_P, kLateral_I, kLateral_F, m_lateralPIDInterface, m_lateralPIDInterface);
+    m_lateralController->SetAbsoluteTolerance(kLateral_TolerancePixels);
+    m_lateralController->SetInputRange(-100.0, 100.0);
+    m_lateralController->SetContinuous(false);
+    m_lateralController->SetOutputRange(-1.0, 1.0);
+    m_lateralController->Disable();
+
+    m_distanceController = new frc::PIDController(kDistance_P, kDistance_I, kDistance_F, m_distancePIDInterface, m_distancePIDInterface);
+    m_distanceController->SetAbsoluteTolerance(kDistance_TolerancePixels);
+    m_distanceController->SetInputRange(-100.0, 100.0);
+    m_distanceController->SetContinuous(false);
+    m_distanceController->SetOutputRange(-1.0, 1.0);
+    m_distanceController->Disable();
+
+    // Driver interface on the buttons
+    m_joystick = new Joystick(0);
+    m_toggleFieldAbsoluteButton = new OperatorButton(m_joystick, c_jsfieldAbs_BTNid);
+    m_yawToP60Button  = new OperatorButton(m_joystick, c_jsYawToP60_BTNid);
+    m_yawToZeroButton = new OperatorButton(m_joystick, c_jsYawToZero_BTNid);
+    m_yawToM60Button  = new OperatorButton(m_joystick, c_jsYawToM60_BTNid);
+    m_autoDriveButton = new OperatorButton(m_joystick, c_jsthumb_BTNid);
+
+    // OK make sure the NavX has finished calibrating
+    if (m_ahrs) {
+        while (m_ahrs->IsCalibrating()) {
+            Wait(0.1);
         }
         m_ahrs->ZeroYaw();
-    } catch (std::exception& ex) {
-        m_ahrs = NULL;
     }
-
-    m_toggleFieldAbsoluteButton = new OperatorButton(m_joystick, c_jsfieldAbs_BTNid);
 }
 
 void DriveSubsystem::DisabledInit() {}
@@ -78,9 +136,17 @@ void DriveSubsystem::TestInit() {}
 
 /********************************** Periodic Routines **********************************/
 
+void DriveSubsystem::Periodic()
+{
+    m_visionTargetsFound = m_ntTable.GetBoolean("targets",false);
+    m_visionLateral = m_ntTable.GetNumber("lateral",0.0);
+    m_visionDistance = m_ntTable.GetNumber("distance",100.0);
+}
+
 void DriveSubsystem::DisabledPeriodic()
 {
     m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
+    Periodic();
 }
 
 void DriveSubsystem::TeleopPeriodic()
@@ -111,11 +177,18 @@ void DriveSubsystem::TeleopPeriodic()
 
     /* Move the robot */
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
+    Periodic();
 }
 
-void DriveSubsystem::AutonomousPeriodic() {}
+void DriveSubsystem::AutonomousPeriodic()
+{
+    Periodic();
+}
 
-void DriveSubsystem::TestPeriodic() {}
+void DriveSubsystem::TestPeriodic()
+{
+    Periodic();
+}
 
 void DriveSubsystem::UpdateDashboard(void)
 {
@@ -128,4 +201,7 @@ void DriveSubsystem::UpdateDashboard(void)
         SmartDashboard::PutString("NavX Exists", "NO");
     }
     SmartDashboard::PutNumber("Drive FieldAbsolute", m_fieldAbsolute);
+    SmartDashboard::PutBoolean("Vision Targets Found",m_visionTargetsFound);
+    SmartDashboard::PutNumber("Vision Lateral", m_visionLateral);
+    SmartDashboard::PutNumber("Vision Distance", m_visionDistance);
 }

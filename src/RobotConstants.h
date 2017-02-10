@@ -19,6 +19,9 @@ const bool c_krrmotor_inverted = true;
 // Joystick buttons
 const int c_jsthumb_BTNid = 2;
 const int c_jsfieldAbs_BTNid = 6;
+const int c_jsYawToP60_BTNid = 7;
+const int c_jsYawToP60_BTNid = 8;
+const int c_jsYawToP60_BTNid = 9;
 
 // Digital Inputs/Outputs
 const int c_autoSelectorLeftChannel   = 1;
