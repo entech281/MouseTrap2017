@@ -1,7 +1,12 @@
 #include <WPILib.h>
+#include <math.h>
 
 #include "DriveSubsystem.h"
 #include "RobotConstants.h"
+
+#ifndef M_PI
+#define M_PI  3.1415926
+#endif
 
 const static double kYaw_P = 0.03;
 const static double kYaw_I = 0.0;
@@ -22,32 +27,110 @@ const static double kDistance_F = 0.0;
 const static double kDistance_TolerancePixels = 2.0;
 
 DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
-  : RobotSubsystem(pRobot, name)
-  , m_joystick(NULL)
-  , m_frmotor(NULL)
-  , m_flmotor(NULL)
-  , m_rrmotor(NULL)
-  , m_rlmotor(NULL)
-  , m_robotDrive(NULL)
-  , m_ahrs(NULL)
-  , m_yawController(NULL)
-  , m_lateralController(NULL)
-  , m_distanceController(NULL)
-  , m_fieldAbsolute(false)
-  , m_toggleFieldAbsoluteButton(NULL)
+    : RobotSubsystem(pRobot, name)
+    , m_pRobot(pRobot)
+    , m_currMode(kManual)
+    , m_joystick(NULL)
+    , m_frmotor(NULL)
+    , m_flmotor(NULL)
+    , m_rrmotor(NULL)
+    , m_rlmotor(NULL)
+    , m_robotDrive(NULL)
+
+    , m_ahrs(NULL)
+    , m_visionTargetsFound(false)
+    , m_visionLateral(0.0)
+    , m_visionDistance(100.0)
+    , m_yawJStwist(0.0)
+    , m_lateralJS(0.0)
+    , m_forwardJS(0.0)
+    , m_yawPIDInterface(NULL)
+    , m_lateralPIDInterface(NULL)
+    , m_distancePIDInterface(NULL)
+    , m_yawController(NULL)
+    , m_lateralController(NULL)
+    , m_distanceController(NULL)
+
+    , m_timer(NULL)
+    , m_time(0.0)
+    , m_speed(0.0)
+    , m_dir(0.0)
+    , m_yawAngle(0.0)
+
+    , m_fieldAbsolute(false)
+    , m_holdYaw(false)
+
+    , m_fieldAbsoluteToggleButton(NULL)
+    , m_holdYawToggleButton(NULL)
+    , m_yawToP60Button(NULL)
+    , m_yawToZeroButton(NULL)
+    , m_yawToM60Button(NULL)
+    , m_autoDriveButton(NULL)
 {
 }
 
 DriveSubsystem::~DriveSubsystem() {}
 
-void DriveSubsystem::ToggleFieldAbsoluteDriving(void)
+void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 {
-	SetFieldAbsoluteDriving(!m_fieldAbsolute);
+    m_dir = angle*M_PI/180.0;
+    m_speed = speed;
+    m_time = time;
+    m_currMode = kDeadRecon;
+    m_timer->Stop();
+    m_timer->Reset();
+    m_timer->Start();
+    m_currMode = kDeadRecon;
 }
 
-void DriveSubsystem::SetFieldAbsoluteDriving(bool active)
+void DriveSubsystem::DriveToVisionTarget(void)
 {
-	m_fieldAbsolute = active;
+    if (m_ahrs) {
+        yaw = m_ahrs->GetYaw();
+        if (yaw < -30.0) {
+            SetYawDirection(-60.0);
+        } else if (yaw > 30.0) {
+            SetYawDirection(60.0);
+        } else {
+            SetYawDirection(0.0);
+        }
+        HoldYaw(true);
+    }
+
+    m_lateralController->SetSetpoint(0.0);
+    m_lateralController->Enable();
+    m_distanceController->SetSetpoint(0.0);
+    m_distanceController->Enable();
+
+    m_currMode = kAutomatic;
+}
+
+bool DriveSubsystem::Done(void)
+{
+    if (m_currMode == kManual) 
+        return true;
+    return false;
+}
+
+void DriveSubsystem::FieldAbsoluteDriving(bool active)
+{
+    m_fieldAbsolute = active;
+}
+
+void DriveSubsystem::HoldYaw(bool active)
+{
+    m_holdYaw = active;
+    if (m_holdYaw) {
+        m_yawController->Enable();
+    } else {
+        m_yawController->Disable();
+    }
+}
+
+void DriveSubsystem::SetYawDirection(double angle)
+{
+    m_yawAngle = angle;
+    m_yawController->SetSetpoint(m_yawAngle);
 }
 
 /********************************** Init Routines **********************************/
@@ -109,9 +192,12 @@ void DriveSubsystem::RobotInit()
     m_distanceController->SetOutputRange(-1.0, 1.0);
     m_distanceController->Disable();
 
-    // Driver interface on the buttons
+    m_timer = new frc::Timer();
+    
+    // Driver interface on Driver joystick buttons
     m_joystick = new Joystick(0);
-    m_toggleFieldAbsoluteButton = new OperatorButton(m_joystick, c_jsfieldAbs_BTNid);
+    m_fieldAbsoluteToggleButton = new OperatorButton(m_joystick, c_jsfieldAbs_BTNid);
+    m_holdYawToggleButton = new OperatorButton(m_joystick, c_jsHoldYaw_BTNid);
     m_yawToP60Button  = new OperatorButton(m_joystick, c_jsYawToP60_BTNid);
     m_yawToZeroButton = new OperatorButton(m_joystick, c_jsYawToZero_BTNid);
     m_yawToM60Button  = new OperatorButton(m_joystick, c_jsYawToM60_BTNid);
@@ -120,19 +206,31 @@ void DriveSubsystem::RobotInit()
     // OK make sure the NavX has finished calibrating
     if (m_ahrs) {
         while (m_ahrs->IsCalibrating()) {
-            Wait(0.1);
+            Wait(0.05);
         }
         m_ahrs->ZeroYaw();
     }
 }
 
-void DriveSubsystem::DisabledInit() {}
+void DriveSubsystem::DisabledInit()
+{
+    m_currMode = kManual;
+}
 
-void DriveSubsystem::TeleopInit() {}
+void DriveSubsystem::TeleopInit()
+{
+    m_currMode = kManual;
+}
 
-void DriveSubsystem::AutonomousInit() {}
+void DriveSubsystem::AutonomousInit()
+{
+    m_currMode = kManual;
+}
 
-void DriveSubsystem::TestInit() {}
+void DriveSubsystem::TestInit()
+{
+    m_currMode = kManual;
+}
 
 /********************************** Periodic Routines **********************************/
 
@@ -151,16 +249,118 @@ void DriveSubsystem::DisabledPeriodic()
 
 void DriveSubsystem::TeleopPeriodic()
 {
+    double yaw;
+    
     GetVisionData();
+
+    // This is teleop, so manage driver inputs here
+    if (m_fieldAbsoluteToggleButton->Get() == OperatorButton::kJustPressed) {
+        SetFieldAbsoluteDriving(!m_fieldAbsolute);
+    }
+    if (m_holdYawToggleButton->Get() == OperatorButton::kJustPressed) {
+        SetYawDirection(m_ahrs->GetYaw());
+    	HoldYaw(!m_holdYaw);
+    }
+    if (m_yawToP60Button->Get() == OperatorButton::kJustPressed) {
+        SetYawDirection(60.0);
+    	HoldYaw(true);
+    }
+    if (m_yawToZeroButton->Get() == OperatorButton::kJustPressed) {
+        SetYawDirection(0.0);
+    	HoldYaw(true);
+    }
+    if (m_yawToM60Button->Get() == OperatorButton::kJustPressed) {
+        SetYawDirection(-60.0);
+    	HoldYaw(true);
+    }
     if (m_visionTargetsFound && m_autoDriveButton->GetBoolean()) {
-        DriveAutomatic();
+        if (m_currMode != kAutomatic) {
+            if (m_ahrs) {
+                yaw = m_ahrs->GetYaw();
+                if (yaw < -30.0) {
+                    SetYawDirection(-60.0);
+                } else if (yaw > 30.0) {
+                    SetYawDirection(60.0);
+                } else {
+                    SetYawDirection(0.0);
+                }
+                HoldYaw(true);
+            }
+            m_lateralController->SetSetpoint(0.0);
+            m_lateralController->Enable();
+            m_distanceController->SetSetpoint(0.0);
+            m_distanceController->Enable();
+        }
+        m_currMode = kAutomatic;
     } else {
+        if (m_currMode != kManual) {
+            if (!m_holdYaw)
+                m_yawController->Disable();
+            m_lateralController->Disable();
+            m_distanceController->Disable();
+        }
+        m_currMode = kManual;
+    }
+    switch (m_currMode) {
+    case kManual:
+    case kDeadRecon:
         DriveManual();
+        break;
+    case kAutomatic:
+        DriveAutomatic();
+        break;
+    }
+}
+
+void DriveSubsystem::AutonomousPeriodic()
+{
+    GetVisionData();
+
+    // This is autonomous -- no driver inputs
+    switch (m_currMode) {
+    case kDeadRecon:
+        if (m_timer->Get() < m_time) {
+            DriveDeadRecon();
+        } else {
+            m_currMode = kManual;
+        }
+        break;
+    case kManual:
+        m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
+        break;
+    case kAutomatic:
+        DriveAutomatic();
+        break;
     }
 }
 
 void DriveSubsystem::DriveAutomatic()
 {
+    m_robotDrive->MecanumDrive_Cartesian(m_lateralJS, m_forwardJS, m_yawJStwist, 0.0);
+    if (m_pRobot->IsGearDropTriggered()) {
+        m_currMode = kManual;
+    }
+}
+
+void DriveSubsystem::DriveDeadRecon()
+{
+    double jsX, jsY, jsT, gyroAngle;
+
+    jsX = m_speed*sin(m_dir);
+    jsY = m_speed*cos(m_dir);
+
+    /* Rotate the robot if the trigger being held or yaw is being maintained */
+    jsT = 0.0;
+    if (m_holdYaw) {
+        jsT = m_yawJStwist;
+    }
+    gyroAngle = 0.0;
+    if (m_fieldAbsolute && m_ahrs) {
+    	gyroAngle = m_ahrs->GetAngle();
+    }
+
+    /* Move the robot */
+    m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
 }
 
 void DriveSubsystem::DriveManual()
@@ -174,14 +374,14 @@ void DriveSubsystem::DriveManual()
         jsY = m_joystick->GetY();
     }
 
-    /* Rotate the robot only if the trigger being held. */
+    /* Rotate the robot if the trigger being held or yaw is being maintained */
     jsT = 0.0;
-    if (m_joystick->GetTrigger()) {
-        jsT = m_joystick->GetTwist();
+    if (m_holdYaw) {
+        jsT = m_yawJStwist;
     }
-
-    if (m_toggleFieldAbsoluteButton->Get() == OperatorButton::kJustPressed) {
-    	ToggleFieldAbsoluteDriving();
+    if (m_joystick->GetTrigger()) {
+        HoldYaw(false);
+        jsT = m_joystick->GetTwist();
     }
 
     gyroAngle = 0.0;
@@ -191,11 +391,6 @@ void DriveSubsystem::DriveManual()
 
     /* Move the robot */
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
-}
-
-void DriveSubsystem::AutonomousPeriodic()
-{
-    GetVisionData();
 }
 
 void DriveSubsystem::TestPeriodic()
@@ -218,53 +413,3 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("Vision Lateral", m_visionLateral);
     SmartDashboard::PutNumber("Vision Distance", m_visionDistance);
 }
-
-#if 0
-// Example code from navex -- to be intergrated into DriveAuto
-    void OperatorControl()
-    {
-        robotDrive.SetSafetyEnabled(false);
-        while (IsOperatorControl() && IsEnabled())
-        {
-            bool reset_yaw_button_pressed = stick.GetRawButton(1);
-            if ( reset_yaw_button_pressed ) {
-                ahrs->ZeroYaw();
-            }
-            bool rotateToAngle = false;
-            if ( stick.GetRawButton(2)) {
-                turnController->SetSetpoint(0.0f);
-                rotateToAngle = true;
-            } else if ( stick.GetRawButton(3)) {
-                turnController->SetSetpoint(90.0f);
-                rotateToAngle = true;
-            } else if ( stick.GetRawButton(4)) {
-                turnController->SetSetpoint(179.9f);
-                rotateToAngle = true;
-            } else if ( stick.GetRawButton(5)) {
-                turnController->SetSetpoint(-90.0f);
-                rotateToAngle = true;
-            }
-            double currentRotationRate;
-            if ( rotateToAngle ) {
-                turnController->Enable();
-                currentRotationRate = rotateToAngleRate;
-            } else {
-                turnController->Disable();
-                currentRotationRate = stick.GetTwist();
-            }
-            try {
-                /* Use the joystick X axis for lateral movement,          */
-                /* Y axis for forward movement, and the current           */
-                /* calculated rotation rate (or joystick Z axis),         */
-                /* depending upon whether "rotate to angle" is active.    */
-                robotDrive.MecanumDrive_Cartesian(stick.GetX(), stick.GetY(),
-                                                  currentRotationRate ,ahrs->GetAngle());
-            } catch (std::exception ex ) {
-                std::string err_string = "Error communicating with Drive System:  ";
-                err_string += ex.what();
-                DriverStation::ReportError(err_string.c_str());
-            }
-            Wait(0.005); // wait 5ms to avoid hogging CPU cycles
-        }
-    }
-#endif
