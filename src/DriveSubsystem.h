@@ -15,12 +15,12 @@ public:
     DriveSubsystem(EntechRobot *pRobot, std::string name = "drive");
     virtual ~DriveSubsystem();
 
-    void ToggleFieldAbsoluteDriving(void);
-    void SetFieldAbsoluteDriving(bool active);
-    
     void DriveHeading(double angle, double speed, double time);
-    void YawToHeading(double angle);
-    void Done(void);
+    void DriveToVisionTarget(void);
+    bool Done(void);
+    void FieldAbsoluteDriving(bool active);
+    void HoldYaw(bool active);
+    void SetYawDirection(double angle);
 
     /********************************** Subsystem Routines **********************************/
     virtual void RobotInit();
@@ -35,24 +35,28 @@ public:
     virtual void UpdateDashboard(void);
 
 private:
+    enum DriveMode { kManual, kAutomatic, kDeadRecon };
+    void SetMode(DriveMode mode);
     void GetVisionData(void);
     void DriveAutomatic(void);
     void DriveManual(void);
-    
+    void DriveDeadRecon(void);
+
+    EntechRobot *m_pRobot;
+    DriveMode m_currMode;
     Joystick* m_joystick;
     CANTalon* m_frmotor;
     CANTalon* m_flmotor;
     CANTalon* m_rrmotor;
     CANTalon* m_rlmotor;
     frc::RobotDrive* m_robotDrive;
-    AHRS *m_ahrs;
-    frc::Timer *m_timer;
 
+    AHRS *m_ahrs;
     NetworkTable m_ntTable;
     bool   m_visionTargetsFound;
     double m_visionLateral;
     double m_visionDistance;
-    
+    // Simulated JS outputs from PID controllers
     double m_yawJStwist;
     double m_lateralJS;
     double m_forwardJS;
@@ -63,8 +67,17 @@ private:
     PIDController *m_lateralController;
     PIDController *m_distanceController;
 
+    frc::Timer *m_timer;
+    double m_time;
+    double m_speed;
+    double m_dir;
+    double m_yawAngle;
+
     bool m_fieldAbsolute;
-    OperatorButton *m_toggleFieldAbsoluteButton;
+    bool m_holdYaw;
+    
+    OperatorButton *m_fieldAbsoluteToggleButton;
+    OperatorButton *m_holdYawToggleButton;
     OperatorButton *m_yawToP60Button;
     OperatorButton *m_yawToZeroButton;
     OperatorButton *m_yawToM60Button;
