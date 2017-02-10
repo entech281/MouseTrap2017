@@ -136,7 +136,7 @@ void DriveSubsystem::TestInit() {}
 
 /********************************** Periodic Routines **********************************/
 
-void DriveSubsystem::Periodic()
+void DriveSubsystem::GetVisionData()
 {
     m_visionTargetsFound = m_ntTable.GetBoolean("targets",false);
     m_visionLateral = m_ntTable.GetNumber("lateral",0.0);
@@ -145,11 +145,25 @@ void DriveSubsystem::Periodic()
 
 void DriveSubsystem::DisabledPeriodic()
 {
+    GetVisionData();
     m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
-    Periodic();
 }
 
 void DriveSubsystem::TeleopPeriodic()
+{
+    GetVisionData();
+    if (m_visionTargetsFound && m_autoDriveButton->GetBoolean()) {
+        DriveAutomatic();
+    } else {
+        DriveManual();
+    }
+}
+
+void DriveSubsystem::DriveAutomatic()
+{
+}
+
+void DriveSubsystem::DriveManual()
 {
     double jsX, jsY, jsT, gyroAngle;
 
@@ -177,17 +191,16 @@ void DriveSubsystem::TeleopPeriodic()
 
     /* Move the robot */
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
-    Periodic();
 }
 
 void DriveSubsystem::AutonomousPeriodic()
 {
-    Periodic();
+    GetVisionData();
 }
 
 void DriveSubsystem::TestPeriodic()
 {
-    Periodic();
+    GetVisionData();
 }
 
 void DriveSubsystem::UpdateDashboard(void)
@@ -205,3 +218,53 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("Vision Lateral", m_visionLateral);
     SmartDashboard::PutNumber("Vision Distance", m_visionDistance);
 }
+
+#if 0
+// Example code from navex -- to be intergrated into DriveAuto
+    void OperatorControl()
+    {
+        robotDrive.SetSafetyEnabled(false);
+        while (IsOperatorControl() && IsEnabled())
+        {
+            bool reset_yaw_button_pressed = stick.GetRawButton(1);
+            if ( reset_yaw_button_pressed ) {
+                ahrs->ZeroYaw();
+            }
+            bool rotateToAngle = false;
+            if ( stick.GetRawButton(2)) {
+                turnController->SetSetpoint(0.0f);
+                rotateToAngle = true;
+            } else if ( stick.GetRawButton(3)) {
+                turnController->SetSetpoint(90.0f);
+                rotateToAngle = true;
+            } else if ( stick.GetRawButton(4)) {
+                turnController->SetSetpoint(179.9f);
+                rotateToAngle = true;
+            } else if ( stick.GetRawButton(5)) {
+                turnController->SetSetpoint(-90.0f);
+                rotateToAngle = true;
+            }
+            double currentRotationRate;
+            if ( rotateToAngle ) {
+                turnController->Enable();
+                currentRotationRate = rotateToAngleRate;
+            } else {
+                turnController->Disable();
+                currentRotationRate = stick.GetTwist();
+            }
+            try {
+                /* Use the joystick X axis for lateral movement,          */
+                /* Y axis for forward movement, and the current           */
+                /* calculated rotation rate (or joystick Z axis),         */
+                /* depending upon whether "rotate to angle" is active.    */
+                robotDrive.MecanumDrive_Cartesian(stick.GetX(), stick.GetY(),
+                                                  currentRotationRate ,ahrs->GetAngle());
+            } catch (std::exception ex ) {
+                std::string err_string = "Error communicating with Drive System:  ";
+                err_string += ex.what();
+                DriverStation::ReportError(err_string.c_str());
+            }
+            Wait(0.005); // wait 5ms to avoid hogging CPU cycles
+        }
+    }
+#endif

@@ -35,7 +35,10 @@ public:
     virtual void UpdateDashboard(void);
 
 private:
-    void Periodic();
+    void GetVisionData(void);
+    void DriveAutomatic(void);
+    void DriveManual(void);
+    
     Joystick* m_joystick;
     CANTalon* m_frmotor;
     CANTalon* m_flmotor;
