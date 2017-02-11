@@ -11,6 +11,7 @@
 EntechRobot::EntechRobot()
     : m_drive(NULL)
     , m_climber(NULL)
+    , m_shooter(NULL)
     , m_lw(NULL)
 {
     m_robotSubsystems.clear();
@@ -23,6 +24,7 @@ void EntechRobot::RobotInit()
     m_lw = frc::LiveWindow::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
+    m_shooter = new ShooterSubsystem(this, "shooter");
 
     m_compressor = new Compressor(c_compressorPCMid);
     if (m_compressor) {

@@ -9,6 +9,8 @@
 #include "DriveSubsystem.h"
 #include "ClimberSubsystem.h"
 #include "DropperSubsystem.h"
+#include "PickUpSubsystem.h"
+#include "ShooterSubsystem.h"
 
 class EntechRobot : public frc::IterativeRobot {
 public:
@@ -21,6 +23,8 @@ protected:
     DriveSubsystem* m_drive;
     ClimberSubsystem *m_climber;
     DropperSubsystem *m_dropper;
+    ShooterSubsystem *m_shooter;
+    PickUpSubsystem *m_pickup;
     Compressor *m_compressor;
     LiveWindow* m_lw;
 

@@ -11,6 +11,7 @@ const int c_frmotor_CANid = 16;
 const int c_rrmotor_CANid = 14;
 const int c_climberMotor_CANid = 3;
 const int c_compressorPCMid = 10;
+const int c_ShooterMotor_CANid = 4;
 
 // Drive motor inversion states
 const bool c_kflmotor_inversed = false;
@@ -25,6 +26,7 @@ const int c_jsfieldAbs_BTNid = 6;
 //Pneumatic Solenoid
 const int c_dropperSolenoidChannel1		= 1;
 const int c_dropperSolenoidChannel2		= 0;
+const int c_pickupSolenoidChannel1     = 2;
 
 //sensors - Digital Inputs
 const int c_dropperSensor = 1;
