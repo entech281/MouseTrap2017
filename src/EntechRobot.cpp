@@ -32,6 +32,10 @@ void EntechRobot::RobotInit()
         m_compressor->Start();
     }
 
+    m_joystick = new Joystick(1);
+    m_climbButton = new OperatorButton(m_joystick,1);
+    m_decendButton = new OperatorButton(m_joystick,2);
+
 #if USB_CAMERA
     std::thread t_visionThread(VisionThread);
     t_visionThread.detach();
@@ -101,6 +105,14 @@ void EntechRobot::TeleopInit()
 
 void EntechRobot::TeleopPeriodic()
 {
+    m_climber->Off();
+    if (m_climbButton->GetBool()) {
+        m_climber->Forward();
+    }
+    if (m_decendButton->GetBool()) {
+        m_climber->Backward();
+    }
+
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->TeleopPeriodic();

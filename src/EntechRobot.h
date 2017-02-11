@@ -11,6 +11,7 @@
 #include "DropperSubsystem.h"
 #include "PickUpSubsystem.h"
 #include "ShooterSubsystem.h"
+#include "OperatorButton.h"
 
 class EntechRobot : public frc::IterativeRobot {
 public:
@@ -28,6 +29,9 @@ protected:
     Compressor *m_compressor;
     LiveWindow* m_lw;
 
+    Joystick  *m_joystick;
+    OperatorButton *m_climbButton;
+    OperatorButton *m_decendButton;
 
     std::list<RobotSubsystem*> m_robotSubsystems;
 
