@@ -7,9 +7,9 @@
 
 EntechRobot::EntechRobot()
     : m_drive(NULL)
-//    , m_gearDrop(NULL)
-//    , m_shooter(NULL)
     , m_climber(NULL)
+    , m_dropper(NULL)
+    , m_compressor(NULL)
     , m_lw(NULL)
     , m_autoDriveButton(NULL)
     , m_geardropButton(NULL)
@@ -31,6 +31,13 @@ void EntechRobot::RobotInit()
 {
     m_lw = frc::LiveWindow::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
+    m_climber = new ClimberSubsystem(this, "climber");
+
+    m_compressor = new Compressor(c_compressorPCMid);
+    if (m_compressor) {
+        m_compressor->SetClosedLoopControl(true);
+        m_compressor->Start();
+    }
 
     m_autoState = kStart;
     m_autoTimer = new Timer();
@@ -94,16 +101,20 @@ void EntechRobot::TeleopPeriodic()
 {
     if (m_autoDriveButton->Get() == OperatorButton::kPressed) {
         m_drive->DriveToVisionTarget();
-//        m_gearDrop->SetMode(GearDropSubsystem::kAutomatic);
-//    } else {
-//        m_gearDrop->SetMode(GearDropSubsystem::kManual);
-//        m_gearDrop->Drop(m_geardropButton->GetBoolean());
+        m_dropper->SetMode(DropperSubsystem::kAutomatic);
+    } else {
+        m_dropper->SetMode(GearDropSubsystem::kManual);
+        if (m_geardropButton->GetBoolean()) {
+            m_dropper->SetPosition(DropperSubsystem::kDown);
+        } else {
+            m_dropper->SetPosition(DropperSubsystem::kUp);
+        }
     }
-//    if (m_climbButton->Get() == OperatorButton::kPressed) {
-//        m_climber->Climb();
-//    } else {
-//        m_climber->Stop();
-//    }
+    if (m_climbButton->Get() == OperatorButton::kPressed) {
+        m_climber->Forward();
+    } else {
+        m_climber->Off();
+    }
     
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
@@ -165,14 +176,14 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kDriveToTarget:
-//        m_gearDrop->SetMode(GearDropSubsystem::kAutomatic);
+        m_dropper->SetMode(GearDropSubsystem::kAutomatic);
         m_drive->DriveToVisionTarget();
         m_autoState = kWaitForDriveToTarget;
         break;
     case kWaitForDriveToTarget:
-//        if (m_gearDrop->DropMade()) {
+        if (m_dropper->IsGearDropped()) {
             m_autoState = kShootFuelLoad;
-//        }
+        }
         break;
     case kShootFuelLoad:
 //        m_shooter->ShootAll();
@@ -199,7 +210,7 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kDriveLateral:
-//        m_gearDrop->Hold();
+        m_dropper->SetPosition(DropperSubsystem::kUp);
         if (m_autoSelection == 1) {
             m_drive->DriveHeading(90.0, 0.60, 1.0); // need values!
         } else if (m_autoSelection == 2) {
@@ -283,3 +294,4 @@ void EntechRobot::RegisterSubsystem(RobotSubsystem* subsys)
 }
 
 START_ROBOT_CLASS(EntechRobot);
+

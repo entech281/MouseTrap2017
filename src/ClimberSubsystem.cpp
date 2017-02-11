@@ -15,12 +15,12 @@ ClimberSubsystem::~ClimberSubsystem()
 {
 
 }
-
+// Sets the rope climb turn speed to off/0 when the "button" is not pressed.
 void ClimberSubsystem::Off()
 {
 		m_speed = 0.;
 }
-
+// Sets the rope climb turn speed to on/-1 when the "button" is pressed.
 void ClimberSubsystem::Forward()
 {
 		m_speed = -1.;
@@ -62,7 +62,7 @@ void ClimberSubsystem::DisabledPeriodic()
 {
 	m_climberMotor->Set(0.0);
 }
-
+//declares that the robot should turn the rope climber when the button is pressed.
 void ClimberSubsystem::TeleopPeriodic()
 {
 	m_climberMotor->Set(m_speed);
@@ -75,5 +75,6 @@ void ClimberSubsystem::AutonomousPeriodic()
 
 void ClimberSubsystem::TestPeriodic()
 {
+
 
 }
