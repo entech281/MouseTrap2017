@@ -33,8 +33,11 @@ void EntechRobot::RobotInit()
     }
 
     m_joystick = new Joystick(1);
-    m_climbButton = new OperatorButton(m_joystick,1);
-    m_decendButton = new OperatorButton(m_joystick,2);
+    m_climbButton = new OperatorButton(m_joystick,c_opclimb_BTNid);
+    m_descendButton = new OperatorButton(m_joystick,c_opdescend_BTNid);
+    m_pickupButton = new OperatorButton(m_joystick,c_oppickup_BTNid);
+    m_autodropButton = new OperatorButton(m_joystick,c_opautodrop_BTNid);
+    m_dropButton = new OperatorButton(m_joystick,c_opdrop_BTNid);
 
 #if USB_CAMERA
     std::thread t_visionThread(VisionThread);
@@ -109,8 +112,23 @@ void EntechRobot::TeleopPeriodic()
     if (m_climbButton->GetBool()) {
         m_climber->Forward();
     }
-    if (m_decendButton->GetBool()) {
+    if (m_descendButton->GetBool()) {
         m_climber->Backward();
+    }
+    if (m_pickupButton ->GetBool()) {
+        m_pickup->SetPosition(PickUpSubsystem::kDown);
+    }else{
+        m_pickup->SetPosition(PickUpSubsystem::kUp);
+    }
+    if (m_autodropButton ->GetBool()) {
+        m_dropper->SetMode(DropperSubsystem::kAutomatic);
+    } else {
+        m_dropper->SetMode(DropperSubsystem::kManual);
+        if (m_dropButton ->GetBool()) {
+            m_dropper->SetPosition(DropperSubsystem::kDown);
+        } else {
+            m_dropper->SetPosition(DropperSubsystem::kUp);
+        }
     }
 
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();

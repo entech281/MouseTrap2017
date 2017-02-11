@@ -31,7 +31,10 @@ protected:
 
     Joystick  *m_joystick;
     OperatorButton *m_climbButton;
-    OperatorButton *m_decendButton;
+    OperatorButton *m_descendButton;
+    OperatorButton *m_dropButton;
+    OperatorButton *m_pickupButton;
+    OperatorButton *m_autodropButton;
 
     std::list<RobotSubsystem*> m_robotSubsystems;
 

@@ -6,7 +6,7 @@
 PickUpSubsystem::PickUpSubsystem(EntechRobot *pRobot, std::string name)
 	: RobotSubsystem(pRobot, name)
 	, m_pickupSolenoid1(NULL)
-    , m_timer(NULL)
+  //  , m_timer(NULL)
 	, m_position(kUp)
 {
 
@@ -16,7 +16,7 @@ PickUpSubsystem::~PickUpSubsystem(){}
 void PickUpSubsystem::RobotInit()
 {
 	m_pickupSolenoid1 = new Solenoid(c_compressorPCMid, c_pickupSolenoidChannel1);
-    m_timer = new Timer();
+   // m_timer = new Timer();
 }
 
 void PickUpSubsystem::AutonomousInit()
@@ -51,9 +51,13 @@ void PickUpSubsystem::AutonomousPeriodic()
 
 void PickUpSubsystem::TeleopPeriodic()
 {
-
+    if (m_position == kDown)
+            {
+                m_pickupSolenoid1->Set(true);
+            } else {
+                m_pickupSolenoid1->Set(false);
+            }
 }
-
 void PickUpSubsystem::DisabledPeriodic()
 {
 

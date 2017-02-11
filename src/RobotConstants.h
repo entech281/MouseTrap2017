@@ -19,9 +19,17 @@ const bool c_krlmotor_inversed = false;
 const bool c_kfrmotor_inversed = true;
 const bool c_krrmotor_inversed = true;
 
-// Joystick buttons
+// Driver Joystick buttons
 const int c_jsthumb_BTNid = 2;
 const int c_jsfieldAbs_BTNid = 6;
+
+// Operator joystick buttons
+const int c_opclimb_BTNid = 1;
+const int c_opautodrop_BTNid = 2;
+const int c_opdescend_BTNid = 3;
+const int c_oppickup_BTNid = 7;
+const int c_opdrop_BTNid = 8;
+
 
 //Pneumatic Solenoid
 const int c_dropperSolenoidChannel1		= 1;
