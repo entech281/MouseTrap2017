@@ -24,6 +24,12 @@ void EntechRobot::RobotInit()
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
 
+    m_compressor = new Compressor(c_compressorPCMid);
+    if (m_compressor) {
+        m_compressor->SetClosedLoopControl(true);
+        m_compressor->Start();
+    }
+
 #if USB_CAMERA
     std::thread t_visionThread(VisionThread);
     t_visionThread.detach();

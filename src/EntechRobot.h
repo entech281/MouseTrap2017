@@ -8,6 +8,7 @@
 #include "RobotConstants.h"
 #include "DriveSubsystem.h"
 #include "ClimberSubsystem.h"
+#include "DropperSubsystem.h"
 
 class EntechRobot : public frc::IterativeRobot {
 public:
@@ -19,7 +20,10 @@ public:
 protected:
     DriveSubsystem* m_drive;
     ClimberSubsystem *m_climber;
+    DropperSubsystem *m_dropper;
+    Compressor *m_compressor;
     LiveWindow* m_lw;
+
 
     std::list<RobotSubsystem*> m_robotSubsystems;
 
