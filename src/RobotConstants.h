@@ -12,13 +12,22 @@ const int c_rrmotor_CANid = 14;
 const int c_climberMotor_CANid = 3;
 
 // Drive motor inversion states
-const bool c_kflmotor_inversed = false;
-const bool c_krlmotor_inversed = false;
-const bool c_kfrmotor_inversed = true;
-const bool c_krrmotor_inversed = true;
+const bool c_kflmotor_inverted = false;
+const bool c_krlmotor_inverted = false;
+const bool c_kfrmotor_inverted = true;
+const bool c_krrmotor_inverted = true;
 
 // Joystick buttons
 const int c_jsthumb_BTNid = 2;
 const int c_jsfieldAbs_BTNid = 6;
+const int c_jsYawToP60_BTNid = 7;
+const int c_jsYawToM60_BTNid = 8;
+const int c_jsYawToZero_BTNid = 9;
+const int c_jsHoldYaw_BTNid  = 10;
+
+// Digital Inputs/Outputs
+const int c_autoSelectorLeftChannel   = 1;
+const int c_autoSelectorMiddleChannel = 2;
+const int c_autoSelectorRightChannel  = 3;
 
 #endif

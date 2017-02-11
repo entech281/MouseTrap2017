@@ -1,5 +1,4 @@
-#ifndef _ENTECH_ROBOT_H
-#define _ENTECH_ROBOT_H
+#pragma once
 
 #include <WPILib.h>
 #include <list>
@@ -7,7 +6,6 @@
 #include "RobotSubsystem.h"
 #include "RobotConstants.h"
 #include "DriveSubsystem.h"
-#include "ClimberSubsystem.h"
 
 class EntechRobot : public frc::IterativeRobot {
 public:
@@ -17,16 +15,7 @@ public:
     void RegisterSubsystem(RobotSubsystem*);
 
 protected:
-    DriveSubsystem* m_drive;
-    ClimberSubsystem *m_climber;
-    LiveWindow* m_lw;
-
-    std::list<RobotSubsystem*> m_robotSubsystems;
-
     void UpdateDashboard();
-#if USB_CAMERA
-	static void VisionThread();
-#endif
 
     virtual void RobotInit();
     virtual void DisabledInit();
@@ -37,6 +26,32 @@ protected:
     virtual void AutonomousPeriodic();
     virtual void TestInit();
     virtual void TestPeriodic();
-};
 
-#endif
+private:
+    DriveSubsystem    *m_drive;
+    //GearDropSubsystem *m_gearDrop;
+    //ShooterSubsystem  *m_shooter;
+    ClimberSubsystem  *m_climber;
+    LiveWindow *m_lw;
+
+    OperatorButton *m_autoDriveButton;
+    OperatorButton *m_geardropButton;
+    OperatorButton *m_climbButton;
+    
+    std::list<RobotSubsystem*> m_robotSubsystems;
+
+    frc::DigitalInput *m_autoSelectorLeft;
+    frc::DigitalInput *m_autoSelectorMiddle;
+    frc::DigitalInput *m_autoSelectorRight;
+    int m_autoSelection;
+    enum AutoState { kStart = 0,
+                     kInitialDrive, kWaitForInitialDrive,
+                     kDriveToTarget, kWaitForDriveToTarget,
+                     kShootFuelLoad, kWaitForShootFuelLoad,
+                     kDriveBackward, kWaitForDriveBackward,
+                     kDriveLateral, kWaitForDriveLateral,
+                     kDriveForward, kWaitForDriveForward,
+                     kDone };
+    AutoState m_autoState;
+    frc::Timer m_autoTimer;
+};
