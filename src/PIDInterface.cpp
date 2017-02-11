@@ -1,20 +1,20 @@
 #include "PIDInterface.h"
 
-PIDInterface::PIDInterface(frc::PIDSource *source, double *output)
+PidInterface::PidInterface(frc::PIDSource *source, double *output)
     : m_psource(source)
     , m_dsource(NULL)
     , m_pidwrite(output)
 {
 }
 
-PIDInterface::PIDInterface(double *source, double *output)
+PidInterface::PidInterface(double *source, double *output)
     : m_psource(NULL)
     , m_dsource(source)
     , m_pidwrite(output)
 {
 }
 
-double PIDInterface::PIDGet(void)
+double PidInterface::PIDGet(void)
 {
     if (m_psource)
         return m_psource->PIDGet();
@@ -23,7 +23,7 @@ double PIDInterface::PIDGet(void)
     return 0.0;
 }
 
-void PIDInterface::PIDWrite(double value)
+void PidInterface::PIDWrite(double value)
 {
     *m_pidwrite = value;
 }

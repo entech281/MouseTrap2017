@@ -165,9 +165,9 @@ void DriveSubsystem::RobotInit()
 
     // PID Controllers
     m_ntTable = NetworkTable::GetTable("Vision");
-    m_yawPIDInterface = new PIDInterface(m_ahrs, &m_yawJStwist);
-    m_lateralPIDInterface = new PIDInterface(&m_visionLateral, &m_lateralJS);
-    m_distancePIDInterface = new PIDInterface(&m_visionDistance, &m_forwardJS);
+    m_yawPIDInterface = new PidInterface(m_ahrs, &m_yawJStwist);
+    m_lateralPIDInterface = new PidInterface(&m_visionLateral, &m_lateralJS);
+    m_distancePIDInterface = new PidInterface(&m_visionDistance, &m_forwardJS);
 
     m_yawController = new frc::PIDController(kYaw_P, kYaw_I, kYaw_D, m_yawPIDInterface, m_yawPIDInterface);
     m_yawController->SetAbsoluteTolerance(kYaw_ToleranceDegrees);

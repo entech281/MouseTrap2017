@@ -15,6 +15,7 @@ public:
     virtual ~EntechRobot();
 
     void RegisterSubsystem(RobotSubsystem*);
+    bool IsGearDropTriggered(void);
 
 protected:
     void UpdateDashboard();
@@ -55,6 +56,6 @@ private:
                      kDriveForward, kWaitForDriveForward,
                      kDone };
     AutoState m_autoState;
-    frc::Timer m_autoTimer;
+    frc::Timer *m_autoTimer;
 };
 

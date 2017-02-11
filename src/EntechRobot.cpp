@@ -33,14 +33,14 @@ void EntechRobot::RobotInit()
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
 
-    m_compressor = new Compressor(c_compressorPCMid);
+    m_compressor = new frc::Compressor(c_compressorPCMid);
     if (m_compressor) {
         m_compressor->SetClosedLoopControl(true);
         m_compressor->Start();
     }
 
     m_autoState = kStart;
-    m_autoTimer = new Timer();
+    m_autoTimer = new frc::Timer();
     m_autoSelectorLeft   = new frc::DigitalInput(c_autoSelectorLeftChannel);
     m_autoSelectorMiddle = new frc::DigitalInput(c_autoSelectorMiddleChannel);
     m_autoSelectorRight  = new frc::DigitalInput(c_autoSelectorRightChannel);
@@ -65,6 +65,12 @@ void EntechRobot::RobotInit()
     }
 
     UpdateDashboard();
+}
+
+bool EntechRobot::IsGearDropTriggered(void)
+{
+    // TODO  actual implementation
+    return true;
 }
 
 void EntechRobot::DisabledInit()
@@ -103,8 +109,8 @@ void EntechRobot::TeleopPeriodic()
         m_drive->DriveToVisionTarget();
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
     } else {
-        m_dropper->SetMode(GearDropSubsystem::kManual);
-        if (m_geardropButton->GetBoolean()) {
+        m_dropper->SetMode(DropperSubsystem::kManual);
+        if (m_geardropButton->GetBool()) {
             m_dropper->SetPosition(DropperSubsystem::kDown);
         } else {
             m_dropper->SetPosition(DropperSubsystem::kUp);
@@ -176,7 +182,7 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kDriveToTarget:
-        m_dropper->SetMode(GearDropSubsystem::kAutomatic);
+        m_dropper->SetMode(DropperSubsystem::kAutomatic);
         m_drive->DriveToVisionTarget();
         m_autoState = kWaitForDriveToTarget;
         break;
@@ -225,7 +231,7 @@ void EntechRobot::AutonomousPeriodic()
             m_autoState = kDriveForward;
         }
         break;
-    case kDriveLateral:
+    case kDriveForward:
         if (m_autoSelection == 1) {
             m_drive->DriveHeading(0.0, 0.60, 2.0); // need values!
         } else if (m_autoSelection == 2) {
@@ -294,4 +300,3 @@ void EntechRobot::RegisterSubsystem(RobotSubsystem* subsys)
 }
 
 START_ROBOT_CLASS(EntechRobot);
-

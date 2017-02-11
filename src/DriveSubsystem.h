@@ -59,9 +59,9 @@ private:
     double m_yawJStwist;
     double m_lateralJS;
     double m_forwardJS;
-    PIDInterface  *m_yawPIDInterface;
-    PIDInterface  *m_lateralPIDInterface;
-    PIDInterface  *m_distancePIDInterface;
+    PidInterface  *m_yawPIDInterface;
+    PidInterface  *m_lateralPIDInterface;
+    PidInterface  *m_distancePIDInterface;
     PIDController *m_yawController;
     PIDController *m_lateralController;
     PIDController *m_distanceController;
