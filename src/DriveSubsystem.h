@@ -52,6 +52,7 @@ private:
 
     AHRS *m_ahrs;
     std::shared_ptr<NetworkTable> m_ntTable;
+    int    m_missingRPiCount;
     bool   m_visionTargetsFound;
     double m_visionLateral;
     double m_visionDistance;

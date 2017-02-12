@@ -36,6 +36,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_robotDrive(NULL)
 
     , m_ahrs(NULL)
+    , m_missingRPiCount(0)
     , m_visionTargetsFound(false)
     , m_visionLateral(0.0)
     , m_visionDistance(100.0)
@@ -235,9 +236,13 @@ void DriveSubsystem::TestInit()
 void DriveSubsystem::GetVisionData()
 {
     if (m_ntTable->GetBoolean("RPi_alive", false)) {
+        m_missingRPiCount = 0;
+        m_ntTable->Delete("RPi_alive");
         m_visionTargetsFound = m_ntTable->GetBoolean("targets",false);
         m_visionLateral = m_ntTable->GetNumber("lateral",0.0);
         m_visionDistance = m_ntTable->GetNumber("distance",100.0);
+    } else {
+        ++m_missingRPiCount;
     }
 }
 
@@ -336,9 +341,18 @@ void DriveSubsystem::AutonomousPeriodic()
 
 void DriveSubsystem::DriveAutomatic()
 {
-    m_robotDrive->MecanumDrive_Cartesian(m_lateralJS, m_forwardJS, m_yawJStwist, 0.0);
-    if (m_pRobot->IsGearDropTriggered()) {
+    double jsY, jsZ;
+    
+    if (m_pRobot->IsGearDropTriggered() || (m_missingRPiCount >= 10)) {
         m_currMode = kManual;
+        m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
+    } else {
+        // Minimum forward speed provided by JS Z axis
+        jsY = m_forwardJS;
+        jsZ = m_joystick->GetZ();
+        if (jsY < jsZ)
+            jsY = jsZ;
+        m_robotDrive->MecanumDrive_Cartesian(m_lateralJS, jsY, m_yawJStwist, 0.0);
     }
 }
 

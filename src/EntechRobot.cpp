@@ -180,7 +180,7 @@ void EntechRobot::AutonomousInit()
 void EntechRobot::AutonomousPeriodic()
 {
     // If no autonomous selection is available -- abort
-    if (m_autoSelection == 0)
+    if ((m_autoSelection == 0) || (m_autoSelection == 7))
         m_autoState = kDone;
     
     switch(m_autoState){
