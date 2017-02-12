@@ -23,8 +23,8 @@ public:
 protected:
     DriveSubsystem* m_drive;
     ClimberSubsystem *m_climber;
-    DropperSubsystem *m_dropper;
     ShooterSubsystem *m_shooter;
+    DropperSubsystem *m_dropper;
     PickUpSubsystem *m_pickup;
     Compressor *m_compressor;
     LiveWindow* m_lw;

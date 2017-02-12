@@ -12,7 +12,16 @@ EntechRobot::EntechRobot()
     : m_drive(NULL)
     , m_climber(NULL)
     , m_shooter(NULL)
+    , m_dropper(NULL)
+    , m_pickup(NULL)
+    , m_compressor(NULL)
     , m_lw(NULL)
+    , m_joystick(NULL)
+    , m_climbButton(NULL)
+    , m_descendButton(NULL)
+    , m_dropButton(NULL)
+    , m_pickupButton(NULL)
+    , m_autodropButton(NULL)
 {
     m_robotSubsystems.clear();
 }
@@ -25,6 +34,8 @@ void EntechRobot::RobotInit()
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
     m_shooter = new ShooterSubsystem(this, "shooter");
+    m_dropper = new DropperSubsystem(this, "dropper");
+    m_pickup = new PickUpSubsystem(this, "pickup");
 
     m_compressor = new Compressor(c_compressorPCMid);
     if (m_compressor) {
@@ -33,11 +44,13 @@ void EntechRobot::RobotInit()
     }
 
     m_joystick = new Joystick(1);
-    m_climbButton = new OperatorButton(m_joystick,c_opclimb_BTNid);
-    m_descendButton = new OperatorButton(m_joystick,c_opdescend_BTNid);
-    m_pickupButton = new OperatorButton(m_joystick,c_oppickup_BTNid);
-    m_autodropButton = new OperatorButton(m_joystick,c_opautodrop_BTNid);
-    m_dropButton = new OperatorButton(m_joystick,c_opdrop_BTNid);
+    if (m_joystick) {
+        m_climbButton = new OperatorButton(m_joystick,c_opclimb_BTNid);
+        m_descendButton = new OperatorButton(m_joystick,c_opdescend_BTNid);
+        m_pickupButton = new OperatorButton(m_joystick,c_oppickup_BTNid);
+        m_autodropButton = new OperatorButton(m_joystick,c_opautodrop_BTNid);
+        m_dropButton = new OperatorButton(m_joystick,c_opdrop_BTNid);
+    }
 
 #if USB_CAMERA
     std::thread t_visionThread(VisionThread);
@@ -108,26 +121,28 @@ void EntechRobot::TeleopInit()
 
 void EntechRobot::TeleopPeriodic()
 {
-    m_climber->Off();
-    if (m_climbButton->GetBool()) {
-        m_climber->Forward();
-    }
-    if (m_descendButton->GetBool()) {
-        m_climber->Backward();
-    }
-    if (m_pickupButton ->GetBool()) {
-        m_pickup->SetPosition(PickUpSubsystem::kDown);
-    }else{
-        m_pickup->SetPosition(PickUpSubsystem::kUp);
-    }
-    if (m_autodropButton ->GetBool()) {
-        m_dropper->SetMode(DropperSubsystem::kAutomatic);
-    } else {
-        m_dropper->SetMode(DropperSubsystem::kManual);
-        if (m_dropButton ->GetBool()) {
-            m_dropper->SetPosition(DropperSubsystem::kDown);
+    if (m_joystick) {
+        m_climber->Off();
+        if (m_climbButton->GetBool()) {
+            m_climber->Forward();
+        }
+        if (m_descendButton->GetBool()) {
+            m_climber->Backward();
+        }
+        if (m_pickupButton ->GetBool()) {
+            m_pickup->SetPosition(PickUpSubsystem::kDown);
+        }else{
+            m_pickup->SetPosition(PickUpSubsystem::kUp);
+        }
+        if (m_autodropButton ->GetBool()) {
+            m_dropper->SetMode(DropperSubsystem::kAutomatic);
         } else {
-            m_dropper->SetPosition(DropperSubsystem::kUp);
+            m_dropper->SetMode(DropperSubsystem::kManual);
+            if (m_dropButton ->GetBool()) {
+                m_dropper->SetPosition(DropperSubsystem::kDown);
+            } else {
+                m_dropper->SetPosition(DropperSubsystem::kUp);
+            }
         }
     }
 
