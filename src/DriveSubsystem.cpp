@@ -193,7 +193,7 @@ void DriveSubsystem::RobotInit()
     m_timer = new frc::Timer();
     
     // Driver interface on Driver joystick buttons
-    m_joystick = new Joystick(0);
+    m_joystick = new Joystick(c_driverJSid);
     m_fieldAbsoluteToggleButton = new OperatorButton(m_joystick, c_jsfieldAbs_BTNid);
     m_holdYawToggleButton = new OperatorButton(m_joystick, c_jsHoldYaw_BTNid);
     m_yawToP60Button  = new OperatorButton(m_joystick, c_jsYawToP60_BTNid);

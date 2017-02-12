@@ -8,12 +8,17 @@
 EntechRobot::EntechRobot()
     : m_drive(NULL)
     , m_climber(NULL)
+    , m_shooter(NULL)
     , m_dropper(NULL)
+    , m_pickup(NULL)
     , m_compressor(NULL)
     , m_lw(NULL)
-    , m_autoDriveButton(NULL)
-    , m_geardropButton(NULL)
+    , m_joystick(NULL)
     , m_climbButton(NULL)
+    , m_descendButton(NULL)
+    , m_dropButton(NULL)
+    , m_pickupButton(NULL)
+    , m_autodropButton(NULL)
 
     , m_autoSelectorLeft(NULL)
     , m_autoSelectorMiddle(NULL)
@@ -32,11 +37,23 @@ void EntechRobot::RobotInit()
     m_lw = frc::LiveWindow::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
+    m_shooter = new ShooterSubsystem(this, "shooter");
+    m_dropper = new DropperSubsystem(this, "dropper");
+    m_pickup = new PickUpSubsystem(this, "pickup");
 
     m_compressor = new frc::Compressor(c_compressorPCMid);
     if (m_compressor) {
         m_compressor->SetClosedLoopControl(true);
         m_compressor->Start();
+    }
+    
+    m_joystick = new Joystick(c_operatorJSid);
+    if (m_joystick) {
+        m_climbButton = new OperatorButton(m_joystick,c_opclimb_BTNid);
+        m_descendButton = new OperatorButton(m_joystick,c_opdescend_BTNid);
+        m_pickupButton = new OperatorButton(m_joystick,c_oppickup_BTNid);
+        m_autodropButton = new OperatorButton(m_joystick,c_opautodrop_BTNid);
+        m_dropButton = new OperatorButton(m_joystick,c_opdrop_BTNid);
     }
 
     m_autoState = kStart;
@@ -105,21 +122,29 @@ void EntechRobot::TeleopInit()
 
 void EntechRobot::TeleopPeriodic()
 {
-    if (m_autoDriveButton->Get() == OperatorButton::kPressed) {
-        m_drive->DriveToVisionTarget();
-        m_dropper->SetMode(DropperSubsystem::kAutomatic);
-    } else {
-        m_dropper->SetMode(DropperSubsystem::kManual);
-        if (m_geardropButton->GetBool()) {
-            m_dropper->SetPosition(DropperSubsystem::kDown);
-        } else {
-            m_dropper->SetPosition(DropperSubsystem::kUp);
-        }
-    }
-    if (m_climbButton->Get() == OperatorButton::kPressed) {
-        m_climber->Forward();
-    } else {
+    if (m_joystick) {
         m_climber->Off();
+        if (m_climbButton->GetBool()) {
+            m_climber->Forward();
+        }
+        if (m_descendButton->GetBool()) {
+            m_climber->Backward();
+        }
+        if (m_pickupButton ->GetBool()) {
+            m_pickup->SetPosition(PickUpSubsystem::kDown);
+        }else{
+            m_pickup->SetPosition(PickUpSubsystem::kUp);
+        }
+        if (m_autodropButton ->GetBool()) {
+            m_dropper->SetMode(DropperSubsystem::kAutomatic);
+        } else {
+            m_dropper->SetMode(DropperSubsystem::kManual);
+            if (m_dropButton ->GetBool()) {
+                m_dropper->SetPosition(DropperSubsystem::kDown);
+            } else {
+                m_dropper->SetPosition(DropperSubsystem::kUp);
+            }
+        }
     }
     
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();

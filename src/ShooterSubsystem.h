@@ -1,5 +1,5 @@
-#ifndef _CLIMBER_SUBSYSTEM_H
-#define _CLIMBER_SUBSYSTEM_H
+#ifndef _SHOOTER_SUBSYSTEM_H
+#define _SHOOTER_SUBSYSTEM_H
 
 #include <WPILib.h>
 #include <CANTalon.h>
@@ -8,15 +8,14 @@
 
 class EntechRobot;
 
-class ClimberSubsystem : public RobotSubsystem {
+class ShooterSubsystem : public RobotSubsystem {
 public:
-    ClimberSubsystem(EntechRobot *pRobot, std::string name = "Climber");
-    virtual ~ClimberSubsystem();
+    ShooterSubsystem(EntechRobot *pRobot, std::string name = "Shooter");
+    virtual ~ShooterSubsystem();
 
 
     void Off(void);
     void Forward(void);
-    void Backward(void);
 
     virtual void UpdateDashboard(void);
 
@@ -31,7 +30,7 @@ public:
     virtual void TestPeriodic();
 
 private:
-    CANTalon* m_climberMotor;
+    CANTalon* m_ShooterMotor;
     double m_speed;
 };
 #endif

@@ -8,6 +8,9 @@
 #include "DriveSubsystem.h"
 #include "ClimberSubsystem.h"
 #include "DropperSubsystem.h"
+#include "PickUpSubsystem.h"
+#include "ShooterSubsystem.h"
+#include "OperatorButton.h"
 
 class EntechRobot : public frc::IterativeRobot {
 public:
@@ -33,13 +36,18 @@ protected:
 private:
     DriveSubsystem    *m_drive;
     ClimberSubsystem  *m_climber;
+    ShooterSubsystem *m_shooter;
     DropperSubsystem *m_dropper;
+    PickUpSubsystem *m_pickup;
     Compressor *m_compressor;
     LiveWindow *m_lw;
 
-    OperatorButton *m_autoDriveButton;
-    OperatorButton *m_geardropButton;
+    Joystick  *m_joystick;
     OperatorButton *m_climbButton;
+    OperatorButton *m_descendButton;
+    OperatorButton *m_dropButton;
+    OperatorButton *m_pickupButton;
+    OperatorButton *m_autodropButton;
     
     std::list<RobotSubsystem*> m_robotSubsystems;
 
@@ -58,4 +66,3 @@ private:
     AutoState m_autoState;
     frc::Timer *m_autoTimer;
 };
-

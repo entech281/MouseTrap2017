@@ -8,10 +8,10 @@ DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
 	, m_dropperSolenoid1(NULL)
 	, m_dropperSolenoid2(NULL)
 	, m_limitSwitch(NULL)
-    ,m_timer(NULL)
+    , m_timer(NULL)
 	, m_position(kUp)
-    ,m_mode(kManual)
-    ,m_lastLimitState(false)
+    , m_mode(kManual)
+    , m_lastLimitState(false)
 {
 
 }

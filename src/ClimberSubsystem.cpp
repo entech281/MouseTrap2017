@@ -26,6 +26,11 @@ void ClimberSubsystem::Forward()
 		m_speed = -1.;
 }
 
+void ClimberSubsystem::Backward()
+{
+        m_speed = 1.;
+}
+
 void ClimberSubsystem::RobotInit()
 {
 	m_climberMotor = new CANTalon(c_climberMotor_CANid);
