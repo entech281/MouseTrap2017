@@ -9,6 +9,16 @@
 #define M_PI  3.1415926
 #endif
 
+#define POSITION_TABLE "position"
+#define RIO_ALIVE_KEY "rio_alive"
+#define RPI_ALIVE_KEY "rpi_alive"
+#define FOUND_KEY "found"
+#define DIRECTION_KEY "direction"
+#define DISTANCE_KEY "distance"
+#define TEAM_281 281
+#define UPDATE_RATE_MS 30
+
+
 const static double kYaw_P = 0.03;
 const static double kYaw_I = 0.0;
 const static double kYaw_D = 0.0;
@@ -165,7 +175,9 @@ void DriveSubsystem::RobotInit()
     m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearRightMotor , c_krrmotor_inverted);
 
     // PID Controllers
-    m_ntTable = NetworkTable::GetTable("Vision");
+    NetworkTable::SetServerMode();
+    NetworkTable::SetUpdateRate(0.050);
+    m_ntTable = NetworkTable::GetTable(POSITION_TABLE);
     m_yawPIDInterface = new PidInterface(m_ahrs, &m_yawJStwist);
     m_lateralPIDInterface = new PidInterface(&m_visionLateral, &m_lateralJS);
     m_distancePIDInterface = new PidInterface(&m_visionDistance, &m_forwardJS);
@@ -235,12 +247,13 @@ void DriveSubsystem::TestInit()
 
 void DriveSubsystem::GetVisionData()
 {
-    if (m_ntTable->GetBoolean("RPi_alive", false)) {
+    m_ntTable->PutBoolean(RIO_ALIVE_KEY,true);
+    if (m_ntTable->GetBoolean(RPI_ALIVE_KEY, false)) {
         m_missingRPiCount = 0;
-        m_ntTable->Delete("RPi_alive");
-        m_visionTargetsFound = m_ntTable->GetBoolean("targets",false);
-        m_visionLateral = m_ntTable->GetNumber("lateral",0.0);
-        m_visionDistance = m_ntTable->GetNumber("distance",100.0);
+        m_ntTable->Delete(RPI_ALIVE_KEY);
+        m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
+        m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
+        m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
     } else {
         ++m_missingRPiCount;
     }
