@@ -29,6 +29,7 @@ public:
 
 private:
     Solenoid* m_pickupSolenoid1;
+    Solenoid* m_pickupSolenoid2;
  //   Timer *m_timer;
     PickUpPosition m_position;
 };

@@ -35,6 +35,7 @@ const int c_opdrop_BTNid = 8;
 const int c_dropperSolenoidChannel1		= 1;
 const int c_dropperSolenoidChannel2		= 0;
 const int c_pickupSolenoidChannel1     = 2;
+const int c_pickupSolenoidChannel2     = 3;
 
 //sensors - Digital Inputs
 const int c_dropperSensor = 1;
