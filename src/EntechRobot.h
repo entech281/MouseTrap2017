@@ -1,5 +1,4 @@
-#ifndef _ENTECH_ROBOT_H
-#define _ENTECH_ROBOT_H
+#pragma once
 
 #include <WPILib.h>
 #include <list>
@@ -19,29 +18,10 @@ public:
     virtual ~EntechRobot();
 
     void RegisterSubsystem(RobotSubsystem*);
+    bool IsGearDropTriggered(void);
 
 protected:
-    DriveSubsystem* m_drive;
-    ClimberSubsystem *m_climber;
-    ShooterSubsystem *m_shooter;
-    DropperSubsystem *m_dropper;
-    PickUpSubsystem *m_pickup;
-    Compressor *m_compressor;
-    LiveWindow* m_lw;
-
-    Joystick  *m_joystick;
-    OperatorButton *m_climbButton;
-    OperatorButton *m_descendButton;
-    OperatorButton *m_dropButton;
-    OperatorButton *m_pickupButton;
-    OperatorButton *m_autodropButton;
-
-    std::list<RobotSubsystem*> m_robotSubsystems;
-
     void UpdateDashboard();
-#if USB_CAMERA
-	static void VisionThread();
-#endif
 
     virtual void RobotInit();
     virtual void DisabledInit();
@@ -52,6 +32,37 @@ protected:
     virtual void AutonomousPeriodic();
     virtual void TestInit();
     virtual void TestPeriodic();
-};
 
-#endif
+private:
+    DriveSubsystem    *m_drive;
+    ClimberSubsystem  *m_climber;
+    ShooterSubsystem *m_shooter;
+    DropperSubsystem *m_dropper;
+    PickUpSubsystem *m_pickup;
+    Compressor *m_compressor;
+    LiveWindow *m_lw;
+
+    Joystick  *m_joystick;
+    OperatorButton *m_climbButton;
+    OperatorButton *m_descendButton;
+    OperatorButton *m_dropButton;
+    OperatorButton *m_pickupButton;
+    OperatorButton *m_autodropButton;
+    
+    std::list<RobotSubsystem*> m_robotSubsystems;
+
+    frc::DigitalInput *m_autoSelectorLeft;
+    frc::DigitalInput *m_autoSelectorMiddle;
+    frc::DigitalInput *m_autoSelectorRight;
+    int m_autoSelection;
+    enum AutoState { kStart = 0,
+                     kInitialDrive, kWaitForInitialDrive,
+                     kDriveToTarget, kWaitForDriveToTarget,
+                     kShootFuelLoad, kWaitForShootFuelLoad,
+                     kDriveBackward, kWaitForDriveBackward,
+                     kDriveLateral, kWaitForDriveLateral,
+                     kDriveForward, kWaitForDriveForward,
+                     kDone };
+    AutoState m_autoState;
+    frc::Timer *m_autoTimer;
+};

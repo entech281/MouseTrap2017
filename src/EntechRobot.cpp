@@ -3,9 +3,6 @@
 #include "EntechRobot.h"
 #include "RobotConstants.h"
 
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/core/core.hpp>
-
 // Sample do nothing change
 
 EntechRobot::EntechRobot()
@@ -22,6 +19,13 @@ EntechRobot::EntechRobot()
     , m_dropButton(NULL)
     , m_pickupButton(NULL)
     , m_autodropButton(NULL)
+
+    , m_autoSelectorLeft(NULL)
+    , m_autoSelectorMiddle(NULL)
+    , m_autoSelectorRight(NULL)
+    , m_autoSelection(0)
+    , m_autoState(kStart)
+    , m_autoTimer(NULL)
 {
     m_robotSubsystems.clear();
 }
@@ -37,13 +41,13 @@ void EntechRobot::RobotInit()
     m_dropper = new DropperSubsystem(this, "dropper");
     m_pickup = new PickUpSubsystem(this, "pickup");
 
-    m_compressor = new Compressor(c_compressorPCMid);
+    m_compressor = new frc::Compressor(c_compressorPCMid);
     if (m_compressor) {
         m_compressor->SetClosedLoopControl(true);
         m_compressor->Start();
     }
-
-    m_joystick = new Joystick(1);
+    
+    m_joystick = new Joystick(c_operatorJSid);
     if (m_joystick) {
         m_climbButton = new OperatorButton(m_joystick,c_opclimb_BTNid);
         m_descendButton = new OperatorButton(m_joystick,c_opdescend_BTNid);
@@ -52,10 +56,18 @@ void EntechRobot::RobotInit()
         m_dropButton = new OperatorButton(m_joystick,c_opdrop_BTNid);
     }
 
-#if USB_CAMERA
-    std::thread t_visionThread(VisionThread);
-    t_visionThread.detach();
-#endif
+    m_autoState = kStart;
+    m_autoTimer = new frc::Timer();
+    m_autoSelectorLeft   = new frc::DigitalInput(c_autoSelectorLeftChannel);
+    m_autoSelectorMiddle = new frc::DigitalInput(c_autoSelectorMiddleChannel);
+    m_autoSelectorRight  = new frc::DigitalInput(c_autoSelectorRightChannel);
+    m_autoSelection = 0;
+    if (m_autoSelectorLeft->Get())
+        m_autoSelection += 1;
+    if (m_autoSelectorLeft->Get())
+        m_autoSelection += 2;
+    if (m_autoSelectorRight->Get())
+        m_autoSelection += 4;
 
     /* 
      * Iterate through each sub-system and run the
@@ -72,22 +84,10 @@ void EntechRobot::RobotInit()
     UpdateDashboard();
 }
 
-#if USB_CAMERA
-void EntechRobot::VisionThread()
+bool EntechRobot::IsGearDropTriggered(void)
 {
-	cs::UsbCamera t_camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
-	t_camera.SetResolution(640,480);
-	cs::CvSink t_cvSink = frc::CameraServer::GetInstance()->GetVideo();
-	cs::CvSource t_outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("Gray", 640, 480);
-	cv::Mat t_source;
-	cv::Mat t_output;
-	while (true) {
-		t_cvSink.GrabFrame(t_source);
-		cvtColor(t_source, t_output, cv::COLOR_BGR2GRAY);
-		t_outputStreamStd.PutFrame(t_output);
-	}
+    return m_dropper->IsGearDropped();
 }
-#endif
 
 void EntechRobot::DisabledInit()
 {
@@ -145,7 +145,7 @@ void EntechRobot::TeleopPeriodic()
             }
         }
     }
-
+    
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->TeleopPeriodic();
@@ -156,6 +156,18 @@ void EntechRobot::TeleopPeriodic()
 
 void EntechRobot::AutonomousInit()
 {
+    m_autoState = kStart;
+    m_autoTimer->Stop();
+    m_autoTimer->Reset();
+
+    m_autoSelection = 0;
+    if (m_autoSelectorLeft->Get())
+        m_autoSelection += 1;
+    if (m_autoSelectorLeft->Get())
+        m_autoSelection += 2;
+    if (m_autoSelectorRight->Get())
+        m_autoSelection += 4;
+    
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->AutonomousInit();
@@ -166,6 +178,104 @@ void EntechRobot::AutonomousInit()
 
 void EntechRobot::AutonomousPeriodic()
 {
+    // If no autonomous selection is available -- abort
+    if ((m_autoSelection == 0) || (m_autoSelection == 7))
+        m_autoState = kDone;
+    
+    switch(m_autoState){
+    case kStart:
+        if ((m_autoSelection == 1) || (m_autoSelection == 4)) {
+            m_autoState = kInitialDrive;
+        } else {
+            m_autoState = kDriveToTarget;
+        }
+        break;
+    case kInitialDrive:
+        m_drive->FieldAbsoluteDriving(true);
+        m_drive->DriveHeading(0.0, 0.60, 1.0); // need values!
+        if (m_autoSelection == 1) {
+            m_drive->SetYawDirection(60.0);
+        } else if (m_autoSelection == 4) {
+            m_drive->SetYawDirection(-60.0);
+        }
+        m_autoState = kWaitForInitialDrive;
+        break;
+    case kWaitForInitialDrive:
+        if (m_drive->Done()){
+            m_autoState = kDriveToTarget;
+        }
+        break;
+    case kDriveToTarget:
+        m_dropper->SetMode(DropperSubsystem::kAutomatic);
+        m_drive->DriveToVisionTarget();
+        m_autoState = kWaitForDriveToTarget;
+        break;
+    case kWaitForDriveToTarget:
+        if (m_dropper->IsGearDropped()) {
+            m_autoState = kShootFuelLoad;
+        }
+        break;
+    case kShootFuelLoad:
+//        m_shooter->ShootAll();
+        m_autoState = kWaitForShootFuelLoad;
+        break;
+    case kWaitForShootFuelLoad:
+//        if (m_shooter->Done()) {
+            m_autoState = kDriveBackward;
+//        }
+        break;
+    case kDriveBackward:
+        if (m_autoSelection == 1) {
+            m_drive->DriveHeading(120.0, 0.60, 0.5); // need values!
+        } else if (m_autoSelection == 2) {
+            m_drive->DriveHeading(-120.0, 0.60, 0.5); // need values!
+        } else if (m_autoSelection == 4) {
+            m_drive->DriveHeading(0.0, 0.60, 0.5); // need values!
+        }
+        m_autoState = kWaitForDriveBackward;
+        break;
+    case kWaitForDriveBackward:
+        if (m_drive->Done()) {
+            m_autoState = kDriveLateral;
+        }
+        break;
+    case kDriveLateral:
+        m_dropper->SetPosition(DropperSubsystem::kUp);
+        if (m_autoSelection == 1) {
+            m_drive->DriveHeading(90.0, 0.60, 1.0); // need values!
+        } else if (m_autoSelection == 2) {
+            m_drive->DriveHeading(90.0, 0.60, 2.0); // need values!
+        } else if (m_autoSelection == 4) {
+            m_drive->DriveHeading(-90.0, 0.60, 1.0); // need values!
+        }
+        m_autoState = kWaitForDriveLateral;
+        break;
+    case kWaitForDriveLateral:
+        if (m_drive->Done()) {
+            m_autoState = kDriveForward;
+        }
+        break;
+    case kDriveForward:
+        if (m_autoSelection == 1) {
+            m_drive->DriveHeading(0.0, 0.60, 2.0); // need values!
+        } else if (m_autoSelection == 2) {
+            m_drive->DriveHeading(0.0, 0.60, 3.0); // need values!
+        } else if (m_autoSelection == 4) {
+            m_drive->DriveHeading(0.0, 0.60, 2.0); // need values!
+        }
+        m_autoState = kWaitForDriveForward;
+        break;
+    case kWaitForDriveForward:
+        if (m_drive->Done()) {
+            m_autoState = kDone;
+        }
+        break;
+    case kDone:
+        break;
+    default:
+        break;
+    }
+
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->AutonomousPeriodic();
@@ -199,6 +309,9 @@ void EntechRobot::TestPeriodic()
 
 void EntechRobot::UpdateDashboard()
 {
+    SmartDashboard::PutNumber("Autonomous Selection (L1,M2,R4)", m_autoSelection);
+    SmartDashboard::PutNumber("Autonomous State", m_autoState);
+    
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
        (*it)->UpdateDashboard();

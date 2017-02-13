@@ -5,11 +5,10 @@
 #include <Solenoid.h>
 
 #include "RobotSubsystem.h"
-#include "OperatorButton.h"
 
 class DropperSubsystem : public RobotSubsystem {
 public:
-	DropperSubsystem(EntechRobot *pRobot, std::string name = "Dropper");
+    DropperSubsystem(EntechRobot *pRobot, std::string name = "Dropper");
     virtual ~DropperSubsystem();
     enum DropperPosition {kUp, kDown};
     enum DropperMode { kManual, kAutomatic };
@@ -31,6 +30,8 @@ public:
     bool IsGearDropped();
 
 private:
+    bool IsPinSensed(void);
+    
     Solenoid* m_dropperSolenoid1;
     Solenoid* m_dropperSolenoid2;
     DigitalInput *m_limitSwitch;

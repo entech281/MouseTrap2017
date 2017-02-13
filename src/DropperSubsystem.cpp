@@ -4,12 +4,12 @@
 #include "RobotConstants.h"
 
 DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
-	: RobotSubsystem(pRobot, name)
-	, m_dropperSolenoid1(NULL)
-	, m_dropperSolenoid2(NULL)
-	, m_limitSwitch(NULL)
+    : RobotSubsystem(pRobot, name)
+    , m_dropperSolenoid1(NULL)
+    , m_dropperSolenoid2(NULL)
+    , m_limitSwitch(NULL)
     , m_timer(NULL)
-	, m_position(kUp)
+    , m_position(kUp)
     , m_mode(kManual)
     , m_lastLimitState(false)
 {
@@ -21,8 +21,8 @@ DropperSubsystem::~DropperSubsystem(){}
 
 void DropperSubsystem::RobotInit()
 {
-	m_dropperSolenoid1 = new Solenoid(c_compressorPCMid, c_dropperSolenoidChannel1);
-	m_dropperSolenoid2 = new Solenoid(c_compressorPCMid, c_dropperSolenoidChannel2);
+    m_dropperSolenoid1 = new Solenoid(c_compressorPCMid, c_dropperSolenoidChannel1);
+    m_dropperSolenoid2 = new Solenoid(c_compressorPCMid, c_dropperSolenoidChannel2);
     m_limitSwitch = new DigitalInput(c_dropperSensor);
     m_timer = new Timer();
 }
@@ -49,7 +49,12 @@ void DropperSubsystem::TestInit()
 
 void DropperSubsystem::UpdateDashboard()
 {
-
+    SmartDashboard::PutBoolean("Gear Drop Pin Sensed", IsPinSensed());
+    if (m_position == kDown) {
+        SmartDashboard::PutString("Gear Drop Position", "Down");
+    } else {
+        SmartDashboard::PutString("Gear Drop Position", "Up");
+    }
 }
 
 
@@ -73,7 +78,7 @@ void DropperSubsystem::TeleopPeriodic()
         }
     } else {
         // TODO: read sensor and set solenoids based on sensor
-        bool currLimitState = m_limitSwitch->Get();
+        bool currLimitState = IsPinSensed();
         if (currLimitState) {
             if (m_lastLimitState != currLimitState) {
                 m_timer->Stop();
@@ -111,7 +116,15 @@ void DropperSubsystem::SetPosition(DropperPosition position)
 
 bool DropperSubsystem::IsGearDropped()
 {
-    if (m_limitSwitch->Get() && (m_timer->Get() > 0.25))
+    if (IsPinSensed() && (m_timer->Get() > 0.25))
         return true;
     return false;
+}
+
+// One liner necessary because RoboRio digital inputs are pulled high
+// by default (reading true).  Current hardware switch does not fix this.
+// Using a normally closed limit switch wiring can switch this
+bool DropperSubsystem::IsPinSensed(void)
+{
+    return !m_limitSwitch->Get();
 }
