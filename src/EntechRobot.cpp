@@ -86,8 +86,7 @@ void EntechRobot::RobotInit()
 
 bool EntechRobot::IsGearDropTriggered(void)
 {
-    // TODO  actual implementation
-    return true;
+    return m_dropper->IsGearDropped();
 }
 
 void EntechRobot::DisabledInit()

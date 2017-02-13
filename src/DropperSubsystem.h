@@ -30,6 +30,8 @@ public:
     bool IsGearDropped();
 
 private:
+    bool IsPinSensed(void);
+    
     Solenoid* m_dropperSolenoid1;
     Solenoid* m_dropperSolenoid2;
     DigitalInput *m_limitSwitch;
