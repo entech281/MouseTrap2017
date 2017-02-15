@@ -13,6 +13,7 @@ EntechRobot::EntechRobot()
     , m_pickup(NULL)
     , m_compressor(NULL)
     , m_lw(NULL)
+    , m_ds(NULL)
     , m_joystick(NULL)
     , m_climbButton(NULL)
     , m_descendButton(NULL)
@@ -20,10 +21,9 @@ EntechRobot::EntechRobot()
     , m_pickupButton(NULL)
     , m_autodropButton(NULL)
 
-    , m_autoSelectorLeft(NULL)
-    , m_autoSelectorMiddle(NULL)
-    , m_autoSelectorRight(NULL)
-    , m_autoSelection(0)
+    , m_autoSelectionD1(NULL)
+    , m_autoSelectionD2(NULL)
+    , m_autoSelectionD3(NULL)
     , m_autoState(kStart)
     , m_autoTimer(NULL)
 {
@@ -35,6 +35,7 @@ EntechRobot::~EntechRobot() {}
 void EntechRobot::RobotInit()
 {
     m_lw = frc::LiveWindow::GetInstance();
+    m_ds = frc::DriverStation::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
     m_shooter = new ShooterSubsystem(this, "shooter");
@@ -58,16 +59,9 @@ void EntechRobot::RobotInit()
 
     m_autoState = kStart;
     m_autoTimer = new frc::Timer();
-    m_autoSelectorLeft   = new frc::DigitalInput(c_autoSelectorLeftChannel);
-    m_autoSelectorMiddle = new frc::DigitalInput(c_autoSelectorMiddleChannel);
-    m_autoSelectorRight  = new frc::DigitalInput(c_autoSelectorRightChannel);
-    m_autoSelection = 0;
-    if (m_autoSelectorLeft->Get())
-        m_autoSelection += 1;
-    if (m_autoSelectorLeft->Get())
-        m_autoSelection += 2;
-    if (m_autoSelectorRight->Get())
-        m_autoSelection += 4;
+    m_autoSelectionD1 = new frc::DigitalInput(c_autoSelectorD1Channel);
+    m_autoSelectionD2 = new frc::DigitalInput(c_autoSelectorD2Channel);
+    m_autoSelectionD3 = new frc::DigitalInput(c_autoSelectorD3Channel);
 
     /* 
      * Iterate through each sub-system and run the
@@ -82,6 +76,41 @@ void EntechRobot::RobotInit()
     }
 
     UpdateDashboard();
+}
+
+void EntechRobot::DetermineAutonomousSetup(void)
+{
+    bool team_red;
+    
+    // D1: jumpered = Blue; unjumpered = Red
+    // D2: jumered = turn, unjumpered = straight
+    // D3: jumpered = left, unjumpered = right
+    if (m_autoSelectionD2->Get()) {
+        m_boilerDistance = kMiddle;
+        m_initialTurn = kStraight;
+    } else {
+        team_red = false;
+        if (m_ds && m_ds->IsFMSAttached()) {
+            if (m_ds->GetAlliance() == frc::DriverStation::kRed) {
+                team_red = true;
+            }
+        } else {
+            if (m_autoSelectionD1->Get()) {
+                team_red = true;
+            }
+        }
+        if (m_autoSelectionD3->Get()) {
+            m_boilerDistance = kNear;
+            if (team_red)
+                m_boilerDistance = kFar;
+            m_initialTurn = kRight60;
+        } else {
+            m_boilerDistance = kFar;
+            if (team_red)
+                m_boilerDistance = kNear;
+            m_initialTurn = kLeft60;
+        }
+    }
 }
 
 bool EntechRobot::IsGearDropTriggered(void)
@@ -101,6 +130,8 @@ void EntechRobot::DisabledInit()
 
 void EntechRobot::DisabledPeriodic()
 {
+    DetermineAutonomousSetup();
+    
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->DisabledPeriodic();
@@ -156,18 +187,12 @@ void EntechRobot::TeleopPeriodic()
 
 void EntechRobot::AutonomousInit()
 {
+    DetermineAutonomousSetup();
+
     m_autoState = kStart;
     m_autoTimer->Stop();
     m_autoTimer->Reset();
 
-    m_autoSelection = 0;
-    if (m_autoSelectorLeft->Get())
-        m_autoSelection += 1;
-    if (m_autoSelectorLeft->Get())
-        m_autoSelection += 2;
-    if (m_autoSelectorRight->Get())
-        m_autoSelection += 4;
-    
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->AutonomousInit();
@@ -178,30 +203,56 @@ void EntechRobot::AutonomousInit()
 
 void EntechRobot::AutonomousPeriodic()
 {
-    // If no autonomous selection is available -- abort
-    if ((m_autoSelection == 0) || (m_autoSelection == 7))
-        m_autoState = kDone;
-    
-    switch(m_autoState){
+    switch(m_autoState) {
     case kStart:
-        if ((m_autoSelection == 1) || (m_autoSelection == 4)) {
-            m_autoState = kInitialDrive;
-        } else {
-            m_autoState = kDriveToTarget;
+        m_autoState = kTurnOnShooter;
+        break;
+    case kTurnOnShooter:
+        switch (m_boilerDistance) {
+        case kNear:
+            m_shooter->Forward(-0.75);
+            break;
+        case kMiddle:
+            m_shooter->Forward(-0.9);
+            break;
+        case kFar:
+            m_shooter->Forward(-1.0);
+            break;
+        }
+        m_autoTimer->Start();
+        m_autoState = kWaitForShooterToSpinup;
+        break;
+    case kWaitForShooterToSpinup:
+        if (m_autoTimer->Get() > 0.5) {
+            m_autoState = kShootFuelLoad;
+        }
+        break;
+    case kShootFuelLoad:
+        m_shooter->ShootAll();
+        m_autoState = kWaitForShootFuelLoad;
+        break;
+    case kWaitForShootFuelLoad:
+        if (m_autoTimer->Get() > 2.5) {
+            m_shooter->Off();
+            if (m_initialTurn == kStraight) {
+                m_autoState = kDriveToTarget;
+            } else {
+                m_autoState = kInitialDrive;
+            }
         }
         break;
     case kInitialDrive:
         m_drive->FieldAbsoluteDriving(true);
         m_drive->DriveHeading(0.0, 0.60, 1.0); // need values!
-        if (m_autoSelection == 1) {
+        if (m_initialTurn == kRight60) {
             m_drive->SetYawDirection(60.0);
-        } else if (m_autoSelection == 4) {
+        } else if (m_initialTurn == kLeft60) {
             m_drive->SetYawDirection(-60.0);
         }
         m_autoState = kWaitForInitialDrive;
         break;
     case kWaitForInitialDrive:
-        if (m_drive->Done()){
+        if (m_drive->Done()) {
             m_autoState = kDriveToTarget;
         }
         break;
@@ -212,25 +263,20 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kWaitForDriveToTarget:
         if (m_dropper->IsGearDropped()) {
-            m_autoState = kShootFuelLoad;
+            m_autoState = kDriveBackward;
         }
         break;
-    case kShootFuelLoad:
-//        m_shooter->ShootAll();
-        m_autoState = kWaitForShootFuelLoad;
-        break;
-    case kWaitForShootFuelLoad:
-//        if (m_shooter->Done()) {
-            m_autoState = kDriveBackward;
-//        }
-        break;
     case kDriveBackward:
-        if (m_autoSelection == 1) {
+        switch (m_initialTurn) {
+        case kLeft60:
             m_drive->DriveHeading(120.0, 0.60, 0.5); // need values!
-        } else if (m_autoSelection == 2) {
+            break;
+        case kRight60:
             m_drive->DriveHeading(-120.0, 0.60, 0.5); // need values!
-        } else if (m_autoSelection == 4) {
+            break;
+        case kStraight:
             m_drive->DriveHeading(0.0, 0.60, 0.5); // need values!
+            break;
         }
         m_autoState = kWaitForDriveBackward;
         break;
@@ -241,12 +287,16 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveLateral:
         m_dropper->SetPosition(DropperSubsystem::kUp);
-        if (m_autoSelection == 1) {
+        switch (m_initialTurn) {
+        case kLeft60:
             m_drive->DriveHeading(90.0, 0.60, 1.0); // need values!
-        } else if (m_autoSelection == 2) {
-            m_drive->DriveHeading(90.0, 0.60, 2.0); // need values!
-        } else if (m_autoSelection == 4) {
+            break;
+        case kRight60:
             m_drive->DriveHeading(-90.0, 0.60, 1.0); // need values!
+            break;
+        case kStraight:
+            m_drive->DriveHeading(90.0, 0.60, 2.0); // need values!
+            break;
         }
         m_autoState = kWaitForDriveLateral;
         break;
@@ -256,12 +306,16 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kDriveForward:
-        if (m_autoSelection == 1) {
+        switch (m_initialTurn) {
+        case kLeft60:
             m_drive->DriveHeading(0.0, 0.60, 2.0); // need values!
-        } else if (m_autoSelection == 2) {
+            break;
+        case kRight60:
+            m_drive->DriveHeading(0.0, 0.60, 2.0); // need values!
+            break;
+        case kStraight:
             m_drive->DriveHeading(0.0, 0.60, 3.0); // need values!
-        } else if (m_autoSelection == 4) {
-            m_drive->DriveHeading(0.0, 0.60, 2.0); // need values!
+            break;
         }
         m_autoState = kWaitForDriveForward;
         break;
@@ -309,9 +363,29 @@ void EntechRobot::TestPeriodic()
 
 void EntechRobot::UpdateDashboard()
 {
-    SmartDashboard::PutNumber("Autonomous Selection (L1,M2,R4)", m_autoSelection);
-    SmartDashboard::PutNumber("Autonomous State", m_autoState);
-    
+    switch (m_boilerDistance) {
+    case kNear:
+        SmartDashboard::PutString("Boiler Distance", "Near");
+        break;
+    case kMiddle:
+        SmartDashboard::PutString("Boiler Distance", "Middle");
+        break;
+    case kFar:
+        SmartDashboard::PutString("Boiler Distance", "Far");
+        break;
+    }
+    switch (m_initialTurn) {
+    case kRight60:
+        SmartDashboard::PutString("Initial Turn", "Right60");
+        break;
+    case kStraight:
+        SmartDashboard::PutString("Initial Turn", "Straight");
+        break;
+    case kLeft60:
+        SmartDashboard::PutString("Initial Turn", "Left60");
+        break;
+    }
+        
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
        (*it)->UpdateDashboard();

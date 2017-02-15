@@ -37,9 +37,9 @@ const int c_opdrop_BTNid = 8;
 
 // Digital Inputs/Outputs
 const int c_dropperSensor = 0;
-const int c_autoSelectorLeftChannel   = 7;
-const int c_autoSelectorMiddleChannel = 8;
-const int c_autoSelectorRightChannel  = 9;
+const int c_autoSelectorD1Channel = 7;
+const int c_autoSelectorD2Channel = 8;
+const int c_autoSelectorD3Channel = 9;
 
 //Pneumatic Solenoids
 const int c_dropperSolenoidChannel2  = 0;

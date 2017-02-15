@@ -34,6 +34,7 @@ protected:
     virtual void TestPeriodic();
 
 private:
+    void DetermineAutonomousSetup(void);
     DriveSubsystem    *m_drive;
     ClimberSubsystem  *m_climber;
     ShooterSubsystem *m_shooter;
@@ -41,6 +42,7 @@ private:
     PickUpSubsystem *m_pickup;
     Compressor *m_compressor;
     LiveWindow *m_lw;
+    DriverStation *m_ds;
 
     Joystick  *m_joystick;
     OperatorButton *m_climbButton;
@@ -51,18 +53,23 @@ private:
     
     std::list<RobotSubsystem*> m_robotSubsystems;
 
-    frc::DigitalInput *m_autoSelectorLeft;
-    frc::DigitalInput *m_autoSelectorMiddle;
-    frc::DigitalInput *m_autoSelectorRight;
-    int m_autoSelection;
+    frc::DigitalInput *m_autoSelectionD1;
+    frc::DigitalInput *m_autoSelectionD2;
+    frc::DigitalInput *m_autoSelectionD3;
     enum AutoState { kStart = 0,
+                     kTurnOnShooter, kWaitForShooterToSpinup,
+                     kShootFuelLoad, kWaitForShootFuelLoad,
                      kInitialDrive, kWaitForInitialDrive,
                      kDriveToTarget, kWaitForDriveToTarget,
-                     kShootFuelLoad, kWaitForShootFuelLoad,
                      kDriveBackward, kWaitForDriveBackward,
                      kDriveLateral, kWaitForDriveLateral,
                      kDriveForward, kWaitForDriveForward,
                      kDone };
     AutoState m_autoState;
+    enum BoilerDistance { kNear, kMiddle, kFar };
+    BoilerDistance m_boilerDistance;
+    enum InitialTurn { kRight60, kStraight, kLeft60 };
+    InitialTurn m_initialTurn;
+    AutoStartPosition m_autoBoilerDistance;
     frc::Timer *m_autoTimer;
 };
