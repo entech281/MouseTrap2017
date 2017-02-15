@@ -18,24 +18,28 @@ ShooterSubsystem::~ShooterSubsystem()
 
 void ShooterSubsystem::Off()
 {
-		m_speed = 0.;
+    m_speed = 0.;
 }
 
 void ShooterSubsystem::Forward(double speed)
 {
-		m_speed = speed;
+    m_speed = speed;
+}
+
+void ShooterSubsystem::ShootAll(void)
+{
+    // TODO actually pull the pin on the trigger
 }
 
 void ShooterSubsystem::RobotInit()
 {
-	m_ShooterMotor = new CANTalon(c_ShooterMotor_CANid);
-	m_ShooterMotor->SetControlMode(CANSpeedController::kPercentVbus);
-
+    m_ShooterMotor = new CANTalon(c_ShooterMotor_CANid);
+    m_ShooterMotor->SetControlMode(CANSpeedController::kPercentVbus);
 }
 
 void ShooterSubsystem::UpdateDashboard()
 {
-        SmartDashboard::PutNumber("Shooter Speed", m_speed);
+    SmartDashboard::PutNumber("Shooter Speed", m_speed);
 }
 
 void ShooterSubsystem::TeleopInit()
@@ -65,7 +69,6 @@ void ShooterSubsystem::DisabledPeriodic()
 
 void ShooterSubsystem::TeleopPeriodic()
 {
-
 }
 
 void ShooterSubsystem::AutonomousPeriodic()

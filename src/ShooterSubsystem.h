@@ -16,6 +16,7 @@ public:
 
     void Off(void);
     void Forward(double speed = -1.0);
+    void ShootAll(void);
 
     virtual void UpdateDashboard(void);
 
