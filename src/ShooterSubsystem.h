@@ -15,7 +15,7 @@ public:
 
 
     void Off(void);
-    void Forward(void);
+    void Forward(double speed = -1.0);
 
     virtual void UpdateDashboard(void);
 

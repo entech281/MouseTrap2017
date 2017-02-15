@@ -36,7 +36,7 @@ const int c_oppickup_BTNid = 7;
 const int c_opdrop_BTNid = 8;
 
 // Digital Inputs/Outputs
-const int c_dropperSensor = 1;
+const int c_dropperSensor = 0;
 const int c_autoSelectorLeftChannel   = 7;
 const int c_autoSelectorMiddleChannel = 8;
 const int c_autoSelectorRightChannel  = 9;

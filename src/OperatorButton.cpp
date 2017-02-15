@@ -20,7 +20,7 @@ OperatorButton::OperatorButton(int number)
 	: m_buttonNum(number)
     , m_lastState(false)
 {
-	m_js = frc::Joystick::GetStickForPort(c_joystickLeftPort);
+	m_js = frc::Joystick::GetStickForPort(0);
 }
 
 OperatorButton::~OperatorButton()

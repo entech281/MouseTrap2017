@@ -43,7 +43,11 @@ void PickUpSubsystem::TestInit()
 
 void PickUpSubsystem::UpdateDashboard()
 {
-
+    if (m_position == kDown) {
+           SmartDashboard::PutString("Claw Position", "Down");
+       } else {
+           SmartDashboard::PutString("Claw Position", "Up");
+       }
 }
 
 void PickUpSubsystem::AutonomousPeriodic()

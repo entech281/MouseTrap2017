@@ -21,9 +21,9 @@ void ShooterSubsystem::Off()
 		m_speed = 0.;
 }
 
-void ShooterSubsystem::Forward()
+void ShooterSubsystem::Forward(double speed)
 {
-		m_speed = -1.;
+		m_speed = speed;
 }
 
 void ShooterSubsystem::RobotInit()
@@ -35,7 +35,7 @@ void ShooterSubsystem::RobotInit()
 
 void ShooterSubsystem::UpdateDashboard()
 {
-
+        SmartDashboard::PutNumber("Shooter Speed", m_speed);
 }
 
 void ShooterSubsystem::TeleopInit()

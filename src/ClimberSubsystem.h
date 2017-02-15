@@ -33,5 +33,6 @@ public:
 private:
     CANTalon* m_climberMotor;
     double m_speed;
+    Timer* m_timer;
 };
 #endif
