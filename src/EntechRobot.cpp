@@ -13,7 +13,6 @@ EntechRobot::EntechRobot()
     , m_pickup(NULL)
     , m_compressor(NULL)
     , m_lw(NULL)
-    , m_ds(NULL)
     , m_joystick(NULL)
     , m_climbButton(NULL)
     , m_descendButton(NULL)
@@ -35,7 +34,6 @@ EntechRobot::~EntechRobot() {}
 void EntechRobot::RobotInit()
 {
     m_lw = frc::LiveWindow::GetInstance();
-    m_ds = frc::DriverStation::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
     m_shooter = new ShooterSubsystem(this, "shooter");
@@ -90,8 +88,9 @@ void EntechRobot::DetermineAutonomousSetup(void)
         m_initialTurn = kStraight;
     } else {
         team_red = false;
-        if (m_ds && m_ds->IsFMSAttached()) {
-            if (m_ds->GetAlliance() == frc::DriverStation::kRed) {
+        frc::DriverStation& ds = frc::DriverStation::GetInstance();
+        if (ds.IsFMSAttached()) {
+            if (ds.GetAlliance() == frc::DriverStation::kRed) {
                 team_red = true;
             }
         } else {

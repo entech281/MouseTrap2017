@@ -42,7 +42,6 @@ private:
     PickUpSubsystem *m_pickup;
     Compressor *m_compressor;
     LiveWindow *m_lw;
-    DriverStation *m_ds;
 
     Joystick  *m_joystick;
     OperatorButton *m_climbButton;
@@ -70,6 +69,6 @@ private:
     BoilerDistance m_boilerDistance;
     enum InitialTurn { kRight60, kStraight, kLeft60 };
     InitialTurn m_initialTurn;
-    AutoStartPosition m_autoBoilerDistance;
+    BoilerDistance m_autoBoilerDistance;
     frc::Timer *m_autoTimer;
 };
