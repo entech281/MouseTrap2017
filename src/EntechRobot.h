@@ -71,4 +71,7 @@ private:
     InitialTurn m_initialTurn;
     BoilerDistance m_autoBoilerDistance;
     frc::Timer *m_autoTimer;
+
+    Preferences *m_prefs;
+    double m_shooterSpeed;
 };

@@ -41,7 +41,7 @@ const int c_autoSelectorD1Channel = 7;
 const int c_autoSelectorD2Channel = 8;
 const int c_autoSelectorD3Channel = 9;
 
-//Pneumatic Solenoids
+// Pneumatic Solenoids
 const int c_dropperSolenoidChannel2  = 0;
 const int c_dropperSolenoidChannel1  = 1;
 const int c_pickupSolenoidChannel1   = 2;

@@ -25,6 +25,9 @@ EntechRobot::EntechRobot()
     , m_autoSelectionD3(NULL)
     , m_autoState(kStart)
     , m_autoTimer(NULL)
+
+	, m_prefs(NULL)
+	, m_shooterSpeed(0.0)
 {
     m_robotSubsystems.clear();
 }
@@ -73,6 +76,8 @@ void EntechRobot::RobotInit()
         (*it)->RobotInit();
     }
 
+    m_prefs = frc::Preferences::GetInstance();
+
     UpdateDashboard();
 }
 
@@ -81,11 +86,13 @@ void EntechRobot::DetermineAutonomousSetup(void)
     bool team_red;
     
     // D1: jumpered = Blue; unjumpered = Red
-    // D2: jumered = turn, unjumpered = straight
+    // D2: jumpered = turn, unjumpered = straight
     // D3: jumpered = left, unjumpered = right
+    m_shooterSpeed = 0.0;
     if (m_autoSelectionD2->Get()) {
         m_boilerDistance = kMiddle;
         m_initialTurn = kStraight;
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", -0.9);
     } else {
         team_red = false;
         frc::DriverStation& ds = frc::DriverStation::GetInstance();
@@ -100,13 +107,19 @@ void EntechRobot::DetermineAutonomousSetup(void)
         }
         if (m_autoSelectionD3->Get()) {
             m_boilerDistance = kNear;
-            if (team_red)
+        	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.75);
+            if (team_red) {
                 m_boilerDistance = kFar;
+                m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -1.0);
+            }
             m_initialTurn = kRight60;
         } else {
             m_boilerDistance = kFar;
-            if (team_red)
+            m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -1.0);
+            if (team_red) {
                 m_boilerDistance = kNear;
+            	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.75);
+            }
             m_initialTurn = kLeft60;
         }
     }
@@ -207,17 +220,7 @@ void EntechRobot::AutonomousPeriodic()
         m_autoState = kTurnOnShooter;
         break;
     case kTurnOnShooter:
-        switch (m_boilerDistance) {
-        case kNear:
-            m_shooter->Forward(-0.75);
-            break;
-        case kMiddle:
-            m_shooter->Forward(-0.9);
-            break;
-        case kFar:
-            m_shooter->Forward(-1.0);
-            break;
-        }
+    	m_shooter->Forward(m_shooterSpeed);
         m_autoTimer->Start();
         m_autoState = kWaitForShooterToSpinup;
         break;
@@ -373,6 +376,8 @@ void EntechRobot::UpdateDashboard()
         SmartDashboard::PutString("Boiler Distance", "Far");
         break;
     }
+    SmartDashboard::PutNumber("Shooter Speed",m_shooterSpeed);
+
     switch (m_initialTurn) {
     case kRight60:
         SmartDashboard::PutString("Initial Turn", "Right60");
