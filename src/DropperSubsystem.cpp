@@ -70,10 +70,10 @@ void DropperSubsystem::TeleopPeriodic()
     if (m_mode == kManual) {
         if (m_position == kDown)
         {
-            m_dropperSolenoid1->Set(true);
+            m_dropperSolenoid1->Set(false);
             m_dropperSolenoid2->Set(true);
         } else {
-            m_dropperSolenoid1->Set(false);
+            m_dropperSolenoid1->Set(true);
             m_dropperSolenoid2->Set(false);
         }
     } else {
@@ -85,10 +85,10 @@ void DropperSubsystem::TeleopPeriodic()
                 m_timer->Reset();
                 m_timer->Start();
             }
-            m_dropperSolenoid1->Set(true);
+            m_dropperSolenoid1->Set(false);
             m_dropperSolenoid2->Set(true);
         } else {
-            m_dropperSolenoid1->Set(false);
+            m_dropperSolenoid1->Set(true);
             m_dropperSolenoid2->Set(false);
         }
         m_lastLimitState = currLimitState;

@@ -42,9 +42,9 @@ const int c_autoSelectorD2Channel = 8;
 const int c_autoSelectorD3Channel = 9;
 
 // Pneumatic Solenoids
-const int c_dropperSolenoidChannel2  = 0;
-const int c_dropperSolenoidChannel1  = 1;
-const int c_pickupSolenoidChannel1   = 2;
-const int c_pickupSolenoidChannel2   = 3;
+const int c_dropperSolenoidChannel2  = 2;
+const int c_dropperSolenoidChannel1  = 3;
+const int c_pickupSolenoidChannel1   = 0;
+const int c_pickupSolenoidChannel2   = 1;
 
 #endif
