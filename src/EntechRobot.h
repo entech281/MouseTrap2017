@@ -52,6 +52,7 @@ private:
     
     std::list<RobotSubsystem*> m_robotSubsystems;
 
+    bool m_autonomousActive;
     frc::DigitalInput *m_autoSelectionD1;
     frc::DigitalInput *m_autoSelectionD2;
     frc::DigitalInput *m_autoSelectionD3;
