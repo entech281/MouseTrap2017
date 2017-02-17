@@ -104,7 +104,7 @@ void EntechRobot::DetermineAutonomousSetup(void)
     if (yaw_left && yaw_right) {
         // Both jumpered -- No autonomous!!
         m_autonomousActive = false;
-    } else if {(!yaw_left) && (!yaw_right)) {
+    } else if ((!yaw_left) && (!yaw_right)) {
         m_boilerDistance = kMiddle;
         m_initialTurn = kStraight;
     } else if (yaw_left) {
@@ -118,7 +118,7 @@ void EntechRobot::DetermineAutonomousSetup(void)
             m_boilerDistance = kFar;
         m_initialTurn = kRight60;
     } else {
-        // impossible
+    	// impossible
     }
 
     // Set shooter speed based on boiler distance
@@ -210,10 +210,10 @@ void EntechRobot::TeleopPeriodic()
 
 void EntechRobot::AutonomousInit()
 {
-    m_autonousActive = true;
+    m_autonomousActive = true;
     DetermineAutonomousSetup();
 
-    if (m_autonousActive) {
+    if (m_autonomousActive) {
         m_autoState = kStart;
     } else {
         m_autoState = kDone;

@@ -277,8 +277,6 @@ void DriveSubsystem::DisabledPeriodic()
 
 void DriveSubsystem::TeleopPeriodic()
 {
-    double yaw;
-    
     GetVisionData();
 
     // This is teleop, so manage driver inputs here
@@ -345,7 +343,7 @@ void DriveSubsystem::AutonomousPeriodic()
 
 void DriveSubsystem::DriveAutomatic()
 {
-    double jsY, jsZ;
+    double jsY;
     
     if (m_pRobot->IsGearDropTriggered() || (m_missingRPiCount > 10)) {
         m_currMode = kManual;
