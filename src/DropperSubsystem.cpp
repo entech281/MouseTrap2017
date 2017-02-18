@@ -82,6 +82,9 @@ void DropperSubsystem::TeleopPeriodic()
     } else {
         if (IsPinSensed()) {
             ++m_pinSensedCounter;
+        } else {
+            // make the counter detect consecutive presses
+            m_pinSensedCounter = 0;
         }
         if (m_pinSensedCounter > c_pinSensesUntilDrop) {
             m_autoTriggered = true;
