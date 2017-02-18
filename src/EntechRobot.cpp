@@ -188,7 +188,7 @@ void EntechRobot::TeleopPeriodic()
         }else{
             m_pickup->SetPosition(PickUpSubsystem::kUp);
         }
-        if (m_autodropButton ->GetBool()) {
+        if (m_autodropButton->GetBool()) {
             m_dropper->SetMode(DropperSubsystem::kAutomatic);
         } else {
             m_dropper->SetMode(DropperSubsystem::kManual);
@@ -305,6 +305,7 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kDriveLateral:
+        m_dropper->SetMode(DropperSubsystem::kManual);
         m_dropper->SetPosition(DropperSubsystem::kUp);
         switch (m_initialTurn) {
         case kLeft60:

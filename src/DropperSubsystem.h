@@ -38,7 +38,8 @@ private:
     Timer *m_timer;
     DropperPosition m_position;
     DropperMode m_mode;
-    bool m_lastLimitState;
+    bool m_autoTriggered;
+    int m_pinSensedCounter;
 };
 
 #endif

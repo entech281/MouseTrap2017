@@ -3,6 +3,8 @@
 #include "DropperSubsystem.h"
 #include "RobotConstants.h"
 
+const int c_pinSensesUntilDrop = 4;
+
 DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
     : RobotSubsystem(pRobot, name)
     , m_dropperSolenoid1(NULL)
@@ -11,7 +13,8 @@ DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
     , m_timer(NULL)
     , m_position(kUp)
     , m_mode(kManual)
-    , m_lastLimitState(false)
+    , m_autoTriggered(false)
+    , m_pinSensedCounter(0)
 {
 
 }
@@ -77,21 +80,22 @@ void DropperSubsystem::TeleopPeriodic()
             m_dropperSolenoid2->Set(false);
         }
     } else {
-        // TODO: read sensor and set solenoids based on sensor
-        bool currLimitState = IsPinSensed();
-        if (currLimitState) {
-            if (m_lastLimitState != currLimitState) {
-                m_timer->Stop();
-                m_timer->Reset();
-                m_timer->Start();
-            }
+        if (IsPinSensed()) {
+            ++m_pinSensedCounter;
+        }
+        if (m_pinSensedCounter > c_pinSensesUntilDrop) {
+            m_autoTriggered = true;
+            m_timer->Stop();
+            m_timer->Reset();
+            m_timer->Start();
+        }
+        if (m_autoTriggered) {
             m_dropperSolenoid1->Set(false);
             m_dropperSolenoid2->Set(true);
         } else {
             m_dropperSolenoid1->Set(true);
             m_dropperSolenoid2->Set(false);
         }
-        m_lastLimitState = currLimitState;
     }
 }
 
@@ -107,6 +111,12 @@ void DropperSubsystem::TestPeriodic()
 void DropperSubsystem::SetMode(DropperMode mode)
 {
     m_mode = mode;
+    if (m_mode == kManual) {
+        m_timer->Stop();
+        m_timer->Reset();
+        m_pinSensedCounter = 0;
+        m_autoTriggered = false;
+    }
 }
 
 void DropperSubsystem::SetPosition(DropperPosition position)
