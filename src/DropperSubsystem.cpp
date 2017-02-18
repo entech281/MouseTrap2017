@@ -65,7 +65,7 @@ void DropperSubsystem::UpdateDashboard()
 
 void DropperSubsystem::AutonomousPeriodic()
 {
-	TeleopPeriodic();
+    TeleopPeriodic();
 }
 
 void DropperSubsystem::TeleopPeriodic()
@@ -127,8 +127,8 @@ void DropperSubsystem::SetPosition(DropperPosition position)
 bool DropperSubsystem::IsGearDropped()
 {
     if (IsPinSensed() && (m_timer->Get() > 0.25))
-        return true;
-    return false;
+            return true;
+        return false;
 }
 
 // One liner necessary because RoboRio digital inputs are pulled high
