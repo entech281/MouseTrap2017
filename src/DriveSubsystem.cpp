@@ -12,6 +12,7 @@
 #define POSITION_TABLE "position"
 #define RIO_ALIVE_KEY "rio_alive"
 #define RPI_ALIVE_KEY "rpi_alive"
+#define RPI_SEQUENCE  "rpi_sequence"
 #define FOUND_KEY "found"
 #define DIRECTION_KEY "direction"
 #define DISTANCE_KEY "distance"
@@ -50,6 +51,8 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
 
     , m_ahrs(NULL)
     , m_missingRPiCount(0)
+    , m_rpi_lastseq(-1)
+    , m_rpi_seq(0)
     , m_visionTargetsFound(false)
     , m_visionLateral(0.0)
     , m_visionDistance(100.0)
@@ -198,8 +201,6 @@ void DriveSubsystem::RobotInit()
     m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearRightMotor , c_krrmotor_inverted);
 
     // PID Controllers
-    NetworkTable::SetServerMode();
-    NetworkTable::SetUpdateRate(0.050);
 #if NAVX
     m_yawPIDInterface = new PidInterface(m_ahrs, &m_yawJStwist);
 #endif
@@ -277,15 +278,16 @@ void DriveSubsystem::GetVisionData()
 {
     m_ntTable = NetworkTable::GetTable(POSITION_TABLE);
     m_ntTable->PutBoolean(RIO_ALIVE_KEY,true);
-    if (m_ntTable->GetBoolean(RPI_ALIVE_KEY, false)) {
+    m_rpi_seq = m_ntTable->GetNumber(RPI_SEQUENCE,m_rpi_lastseq);
+    if (m_rpi_seq != m_rpi_lastseq) {
         m_missingRPiCount = 0;
-        m_ntTable->Delete(RPI_ALIVE_KEY);
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
     } else {
         ++m_missingRPiCount;
     }
+    m_rpi_lastseq = m_rpi_seq;
 }
 
 void DriveSubsystem::DisabledPeriodic()

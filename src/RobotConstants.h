@@ -1,6 +1,8 @@
 #ifndef _ROBOTCONSTANTS_H
 #define _ROBOTCONSTANTS_H
 
+#define NAVX 0
+
 // Joystick Ports
 const int c_driverJSid = 0;
 const int c_operatorJSid = 1;

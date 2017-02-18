@@ -37,6 +37,8 @@ EntechRobot::~EntechRobot() {}
 
 void EntechRobot::RobotInit()
 {
+    NetworkTable::SetServerMode();
+    NetworkTable::SetUpdateRate(0.050);
     m_lw = frc::LiveWindow::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
@@ -86,7 +88,7 @@ void EntechRobot::DetermineAutonomousSetup(void)
 {
     bool yaw_left;
     bool yaw_right;
-    bool boiler_to_right;
+    bool boiler_to_left;
 
     // jumpered = False, unjumpered = True
     // D1: jumpered = Boiler to robot left
@@ -96,7 +98,7 @@ void EntechRobot::DetermineAutonomousSetup(void)
     // D2 & D3 both jumpered -- no Autonomous
     // D2 & D3 both unjumpered -- straight
 
-    boiler_to_right = m_autoSelectionD1->Get();
+    boiler_to_left = m_autoSelectionD1->Get();
     yaw_left = !m_autoSelectionD2->Get();
     yaw_right = !m_autoSelectionD3->Get();
 
@@ -108,14 +110,14 @@ void EntechRobot::DetermineAutonomousSetup(void)
         m_boilerDistance = kMiddle;
         m_initialTurn = kStraight;
     } else if (yaw_left) {
-        m_boilerDistance = kFar;
-        if (boiler_to_right)
-            m_boilerDistance = kNear;
+        m_boilerDistance = kNear;
+        if (boiler_to_left)
+            m_boilerDistance = kFar;
         m_initialTurn = kLeft60;
     } else if (yaw_right) {
-        m_boilerDistance = kNear;
-        if (boiler_to_right)
-            m_boilerDistance = kFar;
+        m_boilerDistance = kFar;
+        if (boiler_to_left)
+            m_boilerDistance = kNear;
         m_initialTurn = kRight60;
     } else {
     	// impossible
