@@ -20,14 +20,15 @@ EntechRobot::EntechRobot()
     , m_pickupButton(NULL)
     , m_autodropButton(NULL)
 
+    , m_autonomousActive(true)
     , m_autoSelectionD1(NULL)
     , m_autoSelectionD2(NULL)
     , m_autoSelectionD3(NULL)
     , m_autoState(kStart)
     , m_autoTimer(NULL)
 
-	, m_prefs(NULL)
-	, m_shooterSpeed(0.0)
+    , m_prefs(NULL)
+    , m_shooterSpeed(0.0)
 {
     m_robotSubsystems.clear();
 }
@@ -83,45 +84,55 @@ void EntechRobot::RobotInit()
 
 void EntechRobot::DetermineAutonomousSetup(void)
 {
-    bool team_red;
-    
-    // D1: jumpered = Blue; unjumpered = Red
-    // D2: jumpered = turn, unjumpered = straight
-    // D3: jumpered = left, unjumpered = right
-    m_shooterSpeed = 0.0;
-    if (m_autoSelectionD2->Get()) {
+    bool yaw_left;
+    bool yaw_right;
+    bool boiler_to_right;
+
+    // jumpered = False, unjumpered = True
+    // D1: jumpered = Boiler to robot left
+    //     unjumpered = Boiler to robot right
+    // D2: jumpered = Yaw left
+    // D3: jumpered = Yaw right
+    // D2 & D3 both jumpered -- no Autonomous
+    // D2 & D3 both unjumpered -- straight
+
+    boiler_to_right = m_autoSelectionD1->Get();
+    yaw_left = !m_autoSelectionD2->Get();
+    yaw_right = !m_autoSelectionD3->Get();
+
+    m_autonomousActive = true;
+    if (yaw_left && yaw_right) {
+        // Both jumpered -- No autonomous!!
+        m_autonomousActive = false;
+    } else if ((!yaw_left) && (!yaw_right)) {
         m_boilerDistance = kMiddle;
         m_initialTurn = kStraight;
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", -0.9);
-    } else {
-        team_red = false;
-        frc::DriverStation& ds = frc::DriverStation::GetInstance();
-        if (ds.IsFMSAttached()) {
-            if (ds.GetAlliance() == frc::DriverStation::kRed) {
-                team_red = true;
-            }
-        } else {
-            if (m_autoSelectionD1->Get()) {
-                team_red = true;
-            }
-        }
-        if (m_autoSelectionD3->Get()) {
+    } else if (yaw_left) {
+        m_boilerDistance = kFar;
+        if (boiler_to_right)
             m_boilerDistance = kNear;
-        	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.75);
-            if (team_red) {
-                m_boilerDistance = kFar;
-                m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -1.0);
-            }
-            m_initialTurn = kRight60;
-        } else {
+        m_initialTurn = kLeft60;
+    } else if (yaw_right) {
+        m_boilerDistance = kNear;
+        if (boiler_to_right)
             m_boilerDistance = kFar;
-            m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -1.0);
-            if (team_red) {
-                m_boilerDistance = kNear;
-            	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.75);
-            }
-            m_initialTurn = kLeft60;
-        }
+        m_initialTurn = kRight60;
+    } else {
+    	// impossible
+    }
+
+    // Set shooter speed based on boiler distance
+    m_shooterSpeed = 0.0;
+    switch (m_boilerDistance) {
+    case kNear:
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.75);
+        break;
+    case kMiddle:
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", -0.9);
+        break;
+    case kFar:
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -1.0);
+        break;
     }
 }
 
@@ -199,9 +210,14 @@ void EntechRobot::TeleopPeriodic()
 
 void EntechRobot::AutonomousInit()
 {
+    m_autonomousActive = true;
     DetermineAutonomousSetup();
 
-    m_autoState = kStart;
+    if (m_autonomousActive) {
+        m_autoState = kStart;
+    } else {
+        m_autoState = kDone;
+    }
     m_autoTimer->Stop();
     m_autoTimer->Reset();
 
@@ -237,6 +253,7 @@ void EntechRobot::AutonomousPeriodic()
         if (m_autoTimer->Get() > 2.5) {
             m_shooter->Off();
             if (m_initialTurn == kStraight) {
+                m_drive->SetYawDirection(0.0);
                 m_autoState = kDriveToTarget;
             } else {
                 m_autoState = kInitialDrive;
@@ -260,7 +277,7 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget();
+        m_drive->DriveToVisionTarget(0.4);  // TODO Set correect speed 
         m_autoState = kWaitForDriveToTarget;
         break;
     case kWaitForDriveToTarget:
@@ -365,6 +382,7 @@ void EntechRobot::TestPeriodic()
 
 void EntechRobot::UpdateDashboard()
 {
+    SmartDashboard::PutBoolean("Autonomous Active", m_autonomousActive);
     switch (m_boilerDistance) {
     case kNear:
         SmartDashboard::PutString("Boiler Distance", "Near");
@@ -383,7 +401,7 @@ void EntechRobot::UpdateDashboard()
         SmartDashboard::PutString("Initial Turn", "Right60");
         break;
     case kStraight:
-        SmartDashboard::PutString("Initial Turn", "Straight");
+        SmartDashboard::PutString("Initial Turn", "None");
         break;
     case kLeft60:
         SmartDashboard::PutString("Initial Turn", "Left60");

@@ -92,7 +92,7 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
     m_currMode = kDeadRecon;
 }
 
-void DriveSubsystem::DriveToVisionTarget(void)
+void DriveSubsystem::DriveToVisionTarget(double speed)
 {
     if (m_ahrs) {
         double yaw = m_ahrs->GetYaw();
@@ -108,10 +108,20 @@ void DriveSubsystem::DriveToVisionTarget(void)
 
     m_lateralController->SetSetpoint(0.0);
     m_lateralController->Enable();
-    m_distanceController->SetSetpoint(0.0);
-    m_distanceController->Enable();
+    m_forwardJS = speed;
+    // m_distanceController->SetSetpoint(0.0);
+    // m_distanceController->Enable();
 
     m_currMode = kAutomatic;
+}
+
+void DriveSubsystem::AbortDriveToVisionTarget(void)
+{
+    if (!m_holdYaw)
+        m_yawController->Disable();
+    m_lateralController->Disable();
+    // m_distanceController->Disable();
+    m_currMode = kManual;
 }
 
 bool DriveSubsystem::Done(void)
@@ -267,8 +277,6 @@ void DriveSubsystem::DisabledPeriodic()
 
 void DriveSubsystem::TeleopPeriodic()
 {
-    double yaw;
-    
     GetVisionData();
 
     // This is teleop, so manage driver inputs here
@@ -293,31 +301,12 @@ void DriveSubsystem::TeleopPeriodic()
     }
     if (m_visionTargetsFound && m_autoDriveButton->GetBool()) {
         if (m_currMode != kAutomatic) {
-            if (m_ahrs) {
-                yaw = m_ahrs->GetYaw();
-                if (yaw < -30.0) {
-                    SetYawDirection(-60.0);
-                } else if (yaw > 30.0) {
-                    SetYawDirection(60.0);
-                } else {
-                    SetYawDirection(0.0);
-                }
-                HoldYaw(true);
-            }
-            m_lateralController->SetSetpoint(0.0);
-            m_lateralController->Enable();
-            m_distanceController->SetSetpoint(0.0);
-            m_distanceController->Enable();
+            DriveToVisionTarget();
         }
-        m_currMode = kAutomatic;
     } else {
         if (m_currMode != kManual) {
-            if (!m_holdYaw)
-                m_yawController->Disable();
-            m_lateralController->Disable();
-            m_distanceController->Disable();
+            AbortDriveToVisionTarget();
         }
-        m_currMode = kManual;
     }
     switch (m_currMode) {
     case kManual:
@@ -354,17 +343,18 @@ void DriveSubsystem::AutonomousPeriodic()
 
 void DriveSubsystem::DriveAutomatic()
 {
-    double jsY, jsZ;
+    double jsY;
     
-    if (m_pRobot->IsGearDropTriggered() || (m_missingRPiCount >= 10)) {
+    if (m_pRobot->IsGearDropTriggered() || (m_missingRPiCount > 10)) {
         m_currMode = kManual;
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
     } else {
-        // Minimum forward speed provided by JS Z axis
-        jsY = m_forwardJS;
-        jsZ = m_joystick->GetZ();
-        if (jsY < jsZ)
-            jsY = jsZ;
+        // Either use joystick for speed from driver or what autonomous wants
+        if (m_forwardJS > 0.0) {
+            jsY = m_forwardJS;
+        } else {
+            jsY = m_joystick->GetY();
+        }
         m_robotDrive->MecanumDrive_Cartesian(m_lateralJS, jsY, m_yawJStwist, 0.0);
     }
 }
