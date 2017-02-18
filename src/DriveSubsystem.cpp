@@ -19,6 +19,8 @@
 #define TEAM_281 281
 #define UPDATE_RATE_MS 30
 
+const int c_countUntilIgnoreRPi = 60;
+
 #define NAVX 0
 
 #if NAVX
@@ -368,7 +370,7 @@ void DriveSubsystem::DriveAutomatic()
 {
     double jsY;
     
-    if (m_pRobot->IsGearDropTriggered() || (m_missingRPiCount > 10)) {
+    if (m_pRobot->IsGearDropTriggered() || (m_missingRPiCount > c_countUntilIgnoreRPi)) {
         m_currMode = kManual;
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
     } else {
