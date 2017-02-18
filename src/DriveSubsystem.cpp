@@ -18,11 +18,14 @@
 #define TEAM_281 281
 #define UPDATE_RATE_MS 30
 
+#define NAVX 0
 
+#if NAVX
 const static double kYaw_P = 0.03;
 const static double kYaw_I = 0.0;
 const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
+#endif
 
 const static double kLateral_P = 0.03;
 const static double kLateral_I = 0.0;
@@ -94,6 +97,7 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 
 void DriveSubsystem::DriveToVisionTarget(double speed)
 {
+#if NAVX
     if (m_ahrs) {
         double yaw = m_ahrs->GetYaw();
         if (yaw < -30.0) {
@@ -105,7 +109,8 @@ void DriveSubsystem::DriveToVisionTarget(double speed)
         }
         HoldYaw(true);
     }
-
+#endif
+    
     m_lateralController->SetSetpoint(0.0);
     m_lateralController->Enable();
     m_forwardJS = speed;
@@ -117,8 +122,10 @@ void DriveSubsystem::DriveToVisionTarget(double speed)
 
 void DriveSubsystem::AbortDriveToVisionTarget(void)
 {
+#if NAVX
     if (!m_holdYaw)
         m_yawController->Disable();
+#endif
     m_lateralController->Disable();
     // m_distanceController->Disable();
     m_currMode = kManual;
@@ -138,18 +145,22 @@ void DriveSubsystem::FieldAbsoluteDriving(bool active)
 
 void DriveSubsystem::HoldYaw(bool active)
 {
+#if NAVX
     m_holdYaw = active;
     if (m_holdYaw) {
         m_yawController->Enable();
     } else {
         m_yawController->Disable();
     }
+#endif
 }
 
 void DriveSubsystem::SetYawDirection(double angle)
 {
+#if NAVX
     m_yawAngle = angle;
     m_yawController->SetSetpoint(m_yawAngle);
+#endif
 }
 
 /********************************** Init Routines **********************************/
@@ -157,6 +168,7 @@ void DriveSubsystem::SetYawDirection(double angle)
 void DriveSubsystem::RobotInit()
 {
     // Try creating the NavX first, to give it time to calibrate
+#if NAVX
     try {
     	m_ahrs = new AHRS(SerialPort::Port::kUSB);
         DriverStation::ReportWarning("NavX found");
@@ -165,7 +177,8 @@ void DriveSubsystem::RobotInit()
         DriverStation::ReportError("NavX MISSING");
         m_ahrs = NULL;
     }
-
+#endif
+    
     m_flmotor = new CANTalon(c_flmotor_CANid);
     m_frmotor = new CANTalon(c_frmotor_CANid);
     m_rlmotor = new CANTalon(c_rlmotor_CANid);
@@ -187,18 +200,21 @@ void DriveSubsystem::RobotInit()
     // PID Controllers
     NetworkTable::SetServerMode();
     NetworkTable::SetUpdateRate(0.050);
-    m_ntTable = NetworkTable::GetTable(POSITION_TABLE);
+#if NAVX
     m_yawPIDInterface = new PidInterface(m_ahrs, &m_yawJStwist);
+#endif
     m_lateralPIDInterface = new PidInterface(&m_visionLateral, &m_lateralJS);
     m_distancePIDInterface = new PidInterface(&m_visionDistance, &m_forwardJS);
 
+#if NAVX
     m_yawController = new frc::PIDController(kYaw_P, kYaw_I, kYaw_D, m_yawPIDInterface, m_yawPIDInterface);
     m_yawController->SetAbsoluteTolerance(kYaw_ToleranceDegrees);
     m_yawController->SetInputRange(-180.0, 180.0);
     m_yawController->SetContinuous(true);
     m_yawController->SetOutputRange(-1.0, 1.0);
     m_yawController->Disable();
-
+#endif
+    
     m_lateralController = new frc::PIDController(kLateral_P, kLateral_I, kLateral_D, m_lateralPIDInterface, m_lateralPIDInterface);
     m_lateralController->SetAbsoluteTolerance(kLateral_TolerancePixels);
     m_lateralController->SetInputRange(-100.0, 100.0);
@@ -225,12 +241,14 @@ void DriveSubsystem::RobotInit()
     m_autoDriveButton = new OperatorButton(m_joystick, c_jsthumb_BTNid);
 
     // OK make sure the NavX has finished calibrating
+#if NAVX
     if (m_ahrs) {
         while (m_ahrs->IsCalibrating()) {
             Wait(0.05);
         }
         m_ahrs->ZeroYaw();
     }
+#endif
 }
 
 void DriveSubsystem::DisabledInit()
@@ -257,6 +275,7 @@ void DriveSubsystem::TestInit()
 
 void DriveSubsystem::GetVisionData()
 {
+    m_ntTable = NetworkTable::GetTable(POSITION_TABLE);
     m_ntTable->PutBoolean(RIO_ALIVE_KEY,true);
     if (m_ntTable->GetBoolean(RPI_ALIVE_KEY, false)) {
         m_missingRPiCount = 0;
@@ -283,6 +302,7 @@ void DriveSubsystem::TeleopPeriodic()
     if (m_fieldAbsoluteToggleButton->Get() == OperatorButton::kJustPressed) {
         FieldAbsoluteDriving(!m_fieldAbsolute);
     }
+#if NAVX
     if (m_holdYawToggleButton->Get() == OperatorButton::kJustPressed) {
         SetYawDirection(m_ahrs->GetYaw());
     	HoldYaw(!m_holdYaw);
@@ -299,6 +319,7 @@ void DriveSubsystem::TeleopPeriodic()
         SetYawDirection(-60.0);
     	HoldYaw(true);
     }
+#endif
     if (m_visionTargetsFound && m_autoDriveButton->GetBool()) {
         if (m_currMode != kAutomatic) {
             DriveToVisionTarget();
@@ -372,10 +393,12 @@ void DriveSubsystem::DriveDeadRecon()
         jsT = m_yawJStwist;
     }
     gyroAngle = 0.0;
+#if NAVX
     if (m_fieldAbsolute && m_ahrs) {
     	gyroAngle = m_ahrs->GetAngle();
     }
-
+#endif
+    
     /* Move the robot */
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
 }
@@ -402,9 +425,11 @@ void DriveSubsystem::DriveManual()
     }
 
     gyroAngle = 0.0;
+#if NAVX
     if (m_fieldAbsolute && m_ahrs) {
     	gyroAngle = m_ahrs->GetAngle();
     }
+#endif
 
     /* Move the robot */
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
@@ -417,6 +442,7 @@ void DriveSubsystem::TestPeriodic()
 
 void DriveSubsystem::UpdateDashboard(void)
 {
+#if NAVX
     if (m_ahrs) {
         SmartDashboard::PutData("NavX", m_ahrs);
         SmartDashboard::PutString("NavX Exists", "YES");
@@ -425,8 +451,12 @@ void DriveSubsystem::UpdateDashboard(void)
     } else {
         SmartDashboard::PutString("NavX Exists", "NO");
     }
+#else
+    SmartDashboard::PutString("NavX Exists", "COMPILED OUT");
+#endif
     SmartDashboard::PutNumber("Drive FieldAbsolute", m_fieldAbsolute);
     SmartDashboard::PutBoolean("Vision Targets Found",m_visionTargetsFound);
     SmartDashboard::PutNumber("Vision Lateral", m_visionLateral);
     SmartDashboard::PutNumber("Vision Distance", m_visionDistance);
+    SmartDashboard::PutNumber("Missing RPi Count", m_missingRPiCount);
 }
