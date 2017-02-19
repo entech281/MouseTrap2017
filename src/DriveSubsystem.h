@@ -77,6 +77,7 @@ private:
     int    m_rpi_seq;
     bool   m_visionTargetsFound;
     double m_visionLateral;
+    double m_lateralDecay;
     double m_visionDistance;
     // Simulated JS outputs from PID controllers
     double m_yawJStwist;

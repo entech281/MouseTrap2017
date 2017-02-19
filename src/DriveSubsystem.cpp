@@ -20,7 +20,7 @@
 #define UPDATE_RATE_MS 30
 
 const int c_countUntilIgnoreRPi = 60;
-const double c_minVisionDistance = 40.;
+const double c_minVisionDistance = 30.;
 
 #if NAVX || IMU_MXP
 const static double kYaw_P = 0.03;
@@ -29,7 +29,7 @@ const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
 #endif
 
-const static double kLateral_P = -0.01;
+const static double kLateral_P = -0.008;
 const static double kLateral_I = 0.0;
 const static double kLateral_D = 0.0;
 const static double kLateral_TolerancePixels = 2.0;
@@ -61,6 +61,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_rpi_seq(0)
     , m_visionTargetsFound(false)
     , m_visionLateral(0.0)
+    , m_lateralDecay(0.0)
     , m_visionDistance(100.0)
     , m_yawJStwist(0.0)
     , m_lateralJS(0.0)
@@ -341,8 +342,10 @@ void DriveSubsystem::GetVisionData()
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
+        m_lateralDecay = m_visionLateral/100.0;
     } else {
         ++m_missingRPiCount;
+        m_visionLateral -= m_lateralDecay;
     }
     m_rpi_lastseq = m_rpi_seq;
 }
