@@ -1,8 +1,6 @@
 #ifndef _ROBOTCONSTANTS_H
 #define _ROBOTCONSTANTS_H
 
-#define NAVX 0
-
 // Joystick Ports
 const int c_driverJSid = 0;
 const int c_operatorJSid = 1;
@@ -24,6 +22,7 @@ const bool c_krrmotor_inverted = true;
 
 // Driver Joystick buttons
 const int c_jsthumb_BTNid = 2;
+const int c_jsYawReset_BTNid = 5;
 const int c_jsfieldAbs_BTNid = 6;
 const int c_jsYawToP60_BTNid = 7;
 const int c_jsYawToM60_BTNid = 8;

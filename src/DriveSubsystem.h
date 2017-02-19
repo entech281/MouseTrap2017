@@ -21,6 +21,7 @@ public:
     void FieldAbsoluteDriving(bool active);
     void HoldYaw(bool active);
     void SetYawDirection(double angle);
+    bool IsYawCorrect(void);
 
     /********************************** Subsystem Routines **********************************/
     virtual void RobotInit();
@@ -84,6 +85,7 @@ private:
     OperatorButton *m_yawToP60Button;
     OperatorButton *m_yawToZeroButton;
     OperatorButton *m_yawToM60Button;
+    OperatorButton *m_resetYawToZeroButton;
     OperatorButton *m_autoDriveButton;
 };
 #endif

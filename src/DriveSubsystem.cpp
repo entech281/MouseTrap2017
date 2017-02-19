@@ -21,7 +21,7 @@
 
 const int c_countUntilIgnoreRPi = 60;
 
-#define NAVX 0
+#define NAVX 1
 
 #if NAVX
 const static double kYaw_P = 0.03;
@@ -30,7 +30,7 @@ const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
 #endif
 
-const static double kLateral_P = 0.03;
+const static double kLateral_P = -0.01;
 const static double kLateral_I = 0.0;
 const static double kLateral_D = 0.0;
 const static double kLateral_TolerancePixels = 2.0;
@@ -82,6 +82,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_yawToP60Button(NULL)
     , m_yawToZeroButton(NULL)
     , m_yawToM60Button(NULL)
+    , m_resetYawToZeroButton(NULL)
     , m_autoDriveButton(NULL)
 {
 }
@@ -168,6 +169,18 @@ void DriveSubsystem::SetYawDirection(double angle)
 #endif
 }
 
+bool DriveSubsystem::IsYawCorrect(void)
+{
+#if NAVX
+    if (fabs(m_ahrs->GetYaw() - m_yawAngle) < 3.0) {
+        return true;
+    }
+    return false;
+#else
+     return true;
+#endif
+}
+
 /********************************** Init Routines **********************************/
 
 void DriveSubsystem::RobotInit()
@@ -241,6 +254,7 @@ void DriveSubsystem::RobotInit()
     m_yawToP60Button  = new OperatorButton(m_joystick, c_jsYawToP60_BTNid);
     m_yawToZeroButton = new OperatorButton(m_joystick, c_jsYawToZero_BTNid);
     m_yawToM60Button  = new OperatorButton(m_joystick, c_jsYawToM60_BTNid);
+    m_resetYawToZeroButton  = new OperatorButton(m_joystick, c_jsYawReset_BTNid);
     m_autoDriveButton = new OperatorButton(m_joystick, c_jsthumb_BTNid);
 
     // OK make sure the NavX has finished calibrating
@@ -323,6 +337,9 @@ void DriveSubsystem::TeleopPeriodic()
         SetYawDirection(-60.0);
     	HoldYaw(true);
     }
+    if (m_resetYawToZeroButton->Get() == OperatorButton::kJustPressed) {
+        m_ahrs->ZeroYaw();
+    }
 #endif
     if (m_visionTargetsFound && m_autoDriveButton->GetBool()) {
         if (m_currMode != kAutomatic) {
@@ -375,7 +392,7 @@ void DriveSubsystem::DriveAutomatic()
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
     } else {
         // Either use joystick for speed from driver or what autonomous wants
-        if (m_forwardJS > 0.0) {
+        if (m_forwardJS < 0.0) {
             jsY = m_forwardJS;
         } else {
             jsY = m_joystick->GetY();
@@ -389,7 +406,7 @@ void DriveSubsystem::DriveDeadRecon()
     double jsX, jsY, jsT, gyroAngle;
 
     jsX = m_speed*sin(m_dir);
-    jsY = m_speed*cos(m_dir);
+    jsY = -m_speed*cos(m_dir);
 
     /* Rotate the robot if the trigger being held or yaw is being maintained */
     jsT = 0.0;
@@ -463,4 +480,7 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("Vision Lateral", m_visionLateral);
     SmartDashboard::PutNumber("Vision Distance", m_visionDistance);
     SmartDashboard::PutNumber("Missing RPi Count", m_missingRPiCount);
+    SmartDashboard::PutNumber("JoystickLateral", m_lateralJS);
+    //SmartDashboard::PutNumber("JoystickX", m_joystick->GetX());
+    //SmartDashboard::PutNumber("JoystickY", m_joystick->GetY());
 }

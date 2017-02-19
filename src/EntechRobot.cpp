@@ -263,23 +263,36 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kInitialDrive:
+        m_drive->HoldYaw(true);
         m_drive->FieldAbsoluteDriving(true);
-        m_drive->DriveHeading(0.0, 0.60, 1.0); // need values!
-        if (m_initialTurn == kRight60) {
-            m_drive->SetYawDirection(60.0);
-        } else if (m_initialTurn == kLeft60) {
-            m_drive->SetYawDirection(-60.0);
-        }
+        m_drive->DriveHeading(0.0, 0.75, 1.0); // need values!
+        m_drive->SetYawDirection(0.0);
         m_autoState = kWaitForInitialDrive;
         break;
     case kWaitForInitialDrive:
+        if (m_drive->Done()) {
+            m_autoState = kInitialTurn;
+        }
+        break;
+    case kInitialTurn:
+        if (m_initialTurn == kRight60) {
+            m_drive->HoldYaw(true);
+            m_drive->SetYawDirection(60.0);
+        } else if (m_initialTurn == kLeft60) {
+            m_drive->HoldYaw(true);
+            m_drive->SetYawDirection(-60.0);
+        }
+        m_drive->DriveHeading(0.0, 0.75, 0.50); // need values!
+        m_autoState = kWaitForInitialTurn;
+        break;
+    case kWaitForInitialTurn:
         if (m_drive->Done()) {
             m_autoState = kDriveToTarget;
         }
         break;
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget(0.4);  // TODO Set correect speed 
+        m_drive->DriveToVisionTarget(-0.6);  // TODO Set correct speed
         m_autoState = kWaitForDriveToTarget;
         break;
     case kWaitForDriveToTarget:
@@ -386,6 +399,7 @@ void EntechRobot::TestPeriodic()
 void EntechRobot::UpdateDashboard()
 {
     SmartDashboard::PutBoolean("Autonomous Active", m_autonomousActive);
+    SmartDashboard::PutNumber("Autonomous State", m_autoState);
     switch (m_boilerDistance) {
     case kNear:
         SmartDashboard::PutString("Boiler Distance", "Near");

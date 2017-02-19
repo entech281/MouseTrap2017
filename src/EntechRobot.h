@@ -60,6 +60,7 @@ private:
                      kTurnOnShooter, kWaitForShooterToSpinup,
                      kShootFuelLoad, kWaitForShootFuelLoad,
                      kInitialDrive, kWaitForInitialDrive,
+                     kInitialTurn, kWaitForInitialTurn,
                      kDriveToTarget, kWaitForDriveToTarget,
                      kDriveBackward, kWaitForDriveBackward,
                      kDriveLateral, kWaitForDriveLateral,
