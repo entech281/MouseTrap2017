@@ -74,7 +74,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_dir(0.0)
     , m_yawAngle(0.0)
 
-    , m_fieldAbsolute(false)
+    , m_fieldAbsolute(true)
     , m_holdYaw(false)
 
     , m_fieldAbsoluteToggleButton(NULL)
