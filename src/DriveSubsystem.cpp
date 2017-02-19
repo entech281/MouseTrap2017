@@ -20,10 +20,9 @@
 #define UPDATE_RATE_MS 30
 
 const int c_countUntilIgnoreRPi = 60;
+const double c_minVisionDistance = 40.;
 
-#define NAVX 1
-
-#if NAVX
+#if NAVX || IMU_MXP
 const static double kYaw_P = 0.03;
 const static double kYaw_I = 0.0;
 const static double kYaw_D = 0.0;
@@ -51,7 +50,12 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_rlmotor(NULL)
     , m_robotDrive(NULL)
 
+#if NAVX
     , m_ahrs(NULL)
+#endif
+#if IMU_MXP
+	, m_imu(NULL)
+#endif
     , m_missingRPiCount(0)
     , m_rpi_lastseq(-1)
     , m_rpi_seq(0)
@@ -103,9 +107,15 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 
 void DriveSubsystem::DriveToVisionTarget(double speed)
 {
+#if NAVX || IMU_MXP
 #if NAVX
     if (m_ahrs) {
         double yaw = m_ahrs->GetYaw();
+#endif
+#if IMU_MXP
+    if (m_imu) {
+        double yaw = m_imu->GetYaw();
+#endif
         if (yaw < -30.0) {
             SetYawDirection(-60.0);
         } else if (yaw > 30.0) {
@@ -128,7 +138,7 @@ void DriveSubsystem::DriveToVisionTarget(double speed)
 
 void DriveSubsystem::AbortDriveToVisionTarget(void)
 {
-#if NAVX
+#if NAVX || IMU_MXP
     if (!m_holdYaw)
         m_yawController->Disable();
 #endif
@@ -151,7 +161,7 @@ void DriveSubsystem::FieldAbsoluteDriving(bool active)
 
 void DriveSubsystem::HoldYaw(bool active)
 {
-#if NAVX
+#if NAVX || IMU_MXP
     m_holdYaw = active;
     if (m_holdYaw) {
         m_yawController->Enable();
@@ -163,7 +173,7 @@ void DriveSubsystem::HoldYaw(bool active)
 
 void DriveSubsystem::SetYawDirection(double angle)
 {
-#if NAVX
+#if NAVX || IMU_MXP
     m_yawAngle = angle;
     m_yawController->SetSetpoint(m_yawAngle);
 #endif
@@ -177,7 +187,14 @@ bool DriveSubsystem::IsYawCorrect(void)
     }
     return false;
 #else
+#if IMU_MXP
+    if (fabs(m_imu->GetYaw() - m_yawAngle) < 3.0) {
+        return true;
+    }
+    return false;
+#else
      return true;
+#endif
 #endif
 }
 
@@ -186,14 +203,35 @@ bool DriveSubsystem::IsYawCorrect(void)
 void DriveSubsystem::RobotInit()
 {
     // Try creating the NavX first, to give it time to calibrate
-#if NAVX
+#if NAVX_USB
     try {
     	m_ahrs = new AHRS(SerialPort::Port::kUSB);
-        DriverStation::ReportWarning("NavX found");
+        DriverStation::ReportWarning("NavX USB found");
         m_ahrs->Reset();
     } catch (std::exception& ex) {
-        DriverStation::ReportError("NavX MISSING");
+        DriverStation::ReportError("NavX USB MISSING");
         m_ahrs = NULL;
+    }
+#endif
+#if NAVX_MXP
+    try {
+    	m_ahrs = new AHRS(SPI::kMXP);
+        DriverStation::ReportWarning("NavX MXP found");
+        m_ahrs->Reset();
+    } catch (std::exception& ex) {
+        DriverStation::ReportError("NavX MXP MISSING");
+        m_ahrs = NULL;
+    }
+#endif
+#if IMU_MXP
+    try {
+    	m_imu = new ADIS16448_IMU();
+        DriverStation::ReportWarning("IMU MXP found");
+    	m_imu->Calibrate();
+    	m_imu->Reset();
+    } catch (std::exception & ex) {
+        DriverStation::ReportWarning("IMU MXP MISSING");
+    	m_imu = NULL;
     }
 #endif
     
@@ -219,10 +257,13 @@ void DriveSubsystem::RobotInit()
 #if NAVX
     m_yawPIDInterface = new PidInterface(m_ahrs, &m_yawJStwist);
 #endif
+#if IMU_MXP
+    m_yawPIDInterface = new PidInterface(m_imu, &m_yawJStwist);
+#endif
     m_lateralPIDInterface = new PidInterface(&m_visionLateral, &m_lateralJS);
     m_distancePIDInterface = new PidInterface(&m_visionDistance, &m_forwardJS);
 
-#if NAVX
+#if NAVX || IMU_MXP
     m_yawController = new frc::PIDController(kYaw_P, kYaw_I, kYaw_D, m_yawPIDInterface, m_yawPIDInterface);
     m_yawController->SetAbsoluteTolerance(kYaw_ToleranceDegrees);
     m_yawController->SetInputRange(-180.0, 180.0);
@@ -320,9 +361,14 @@ void DriveSubsystem::TeleopPeriodic()
     if (m_fieldAbsoluteToggleButton->Get() == OperatorButton::kJustPressed) {
         FieldAbsoluteDriving(!m_fieldAbsolute);
     }
-#if NAVX
+#if NAVX || IMU_MXP
     if (m_holdYawToggleButton->Get() == OperatorButton::kJustPressed) {
-        SetYawDirection(m_ahrs->GetYaw());
+#if NAVX
+    	SetYawDirection(m_ahrs->GetYaw());
+#endif
+#if IMU_MXP
+    	SetYawDirection(m_imu->GetYaw());
+#endif
     	HoldYaw(!m_holdYaw);
     }
     if (m_yawToP60Button->Get() == OperatorButton::kJustPressed) {
@@ -385,7 +431,7 @@ void DriveSubsystem::AutonomousPeriodic()
 
 void DriveSubsystem::DriveAutomatic()
 {
-    double jsY;
+    double jsX, jsY;
     
     if (m_pRobot->IsGearDropTriggered() || (m_missingRPiCount > c_countUntilIgnoreRPi)) {
         m_currMode = kManual;
@@ -402,7 +448,11 @@ void DriveSubsystem::DriveAutomatic()
         } else {
             jsY = m_joystick->GetY();
         }
-        m_robotDrive->MecanumDrive_Cartesian(m_lateralJS, jsY, m_yawJStwist, 0.0);
+        jsX = m_lateralJS;
+        if (m_visionDistance < c_minVisionDistance) {
+        	jsX = 0.0;
+        }
+        m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, m_yawJStwist, 0.0);
     }
 }
 
@@ -422,6 +472,11 @@ void DriveSubsystem::DriveDeadRecon()
 #if NAVX
     if (m_fieldAbsolute && m_ahrs) {
     	gyroAngle = m_ahrs->GetAngle();
+    }
+#endif
+#if IMU_MXP
+    if (m_fieldAbsolute && m_imu) {
+    	gyroAngle = m_imu->GetAngle();
     }
 #endif
     
@@ -456,6 +511,11 @@ void DriveSubsystem::DriveManual()
     	gyroAngle = m_ahrs->GetAngle();
     }
 #endif
+#if IMU_MXP
+    if (m_fieldAbsolute && m_imu) {
+    	gyroAngle = m_imu->GetAngle();
+    }
+#endif
 
     /* Move the robot */
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
@@ -468,17 +528,29 @@ void DriveSubsystem::TestPeriodic()
 
 void DriveSubsystem::UpdateDashboard(void)
 {
+#if NAVX || IMU_MXP
 #if NAVX
     if (m_ahrs) {
         SmartDashboard::PutData("NavX", m_ahrs);
-        SmartDashboard::PutString("NavX Exists", "YES");
-        SmartDashboard::PutNumber("NavX GetAngle()", m_ahrs->GetAngle()); //total accumulated yaw angle, 360+
-        SmartDashboard::PutNumber("NavX GetYaw()", m_ahrs->GetYaw()); //-180 to 180 degrees
+        SmartDashboard::PutString("Gyro Type", "NAVX");
+        SmartDashboard::PutNumber("GetAngle()", m_ahrs->GetAngle()); //total accumulated yaw angle, 360+
+        SmartDashboard::PutNumber("GetYaw()", m_ahrs->GetYaw()); //-180 to 180 degrees
     } else {
-        SmartDashboard::PutString("NavX Exists", "NO");
+        SmartDashboard::PutString("Gyro Type", "NAVX Missing");
     }
+#endif
+#if IMU_MXP
+    if (m_imu) {
+        SmartDashboard::PutData("IMU", m_imu);
+        SmartDashboard::PutString("Gyro Type", "IMU");
+        SmartDashboard::PutNumber("GetAngle()", m_imu->GetAngle()); //total accumulated yaw angle, 360+
+        SmartDashboard::PutNumber("GetYaw()", m_imu->GetYaw()); //-180 to 180 degrees
+    } else {
+        SmartDashboard::PutString("Gyro Type", "IMU Missing");
+    }
+#endif
 #else
-    SmartDashboard::PutString("NavX Exists", "COMPILED OUT");
+    SmartDashboard::PutString("Gyro Type", "COMPILED OUT");
 #endif
     SmartDashboard::PutNumber("Drive FieldAbsolute", m_fieldAbsolute);
     SmartDashboard::PutBoolean("Vision Targets Found",m_visionTargetsFound);

@@ -1,9 +1,21 @@
 #ifndef _DRIVE_SUBSYSTEM_H
 #define _DRIVE_SUBSYSTEM_H
 
+#define NAVX_USB 1
+#define NAVX_MXP 0
+#define  IMU_MXP 0
+#if NAVX_USB || NAVX_MXP
+#define NAVX 1
+#endif
+
 #include <WPILib.h>
 #include <CANTalon.h>
+#if NAVX
 #include <AHRS.h>
+#endif
+#if IMU_MXP
+#include <ADIS16448_IMU.h>
+#endif
 
 #include "RobotSubsystem.h"
 #include "PIDInterface.h"
@@ -52,7 +64,13 @@ private:
     CANTalon* m_rlmotor;
     frc::RobotDrive* m_robotDrive;
 
+#if NAVX
     AHRS *m_ahrs;
+#endif
+#if IMU_MXP
+    ADIS16448_IMU *m_imu;
+#endif
+
     std::shared_ptr<NetworkTable> m_ntTable;
     int    m_missingRPiCount;
     int    m_rpi_lastseq;
