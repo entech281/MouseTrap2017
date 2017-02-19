@@ -394,6 +394,11 @@ void DriveSubsystem::DriveAutomatic()
         // Either use joystick for speed from driver or what autonomous wants
         if (m_forwardJS < 0.0) {
             jsY = m_forwardJS;
+            if ((m_visionDistance < 65.0) && (m_forwardJS < -0.2)) {
+                jsY = -0.2;
+            } else if ((m_visionDistance < 50.0) && (m_forwardJS < -0.1)) {
+                jsY = -0.1;
+            }
         } else {
             jsY = m_joystick->GetY();
         }
