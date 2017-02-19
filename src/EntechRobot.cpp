@@ -265,7 +265,7 @@ void EntechRobot::AutonomousPeriodic()
     case kInitialDrive:
         m_drive->HoldYaw(true);
         m_drive->FieldAbsoluteDriving(true);
-        m_drive->DriveHeading(0.0, 0.75, 1.0); // need values!
+        m_drive->DriveHeading(0.0, 0.75, 0.9); // need values!
         m_drive->SetYawDirection(0.0);
         m_autoState = kWaitForInitialDrive;
         break;
@@ -292,7 +292,7 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget(-0.6);  // TODO Set correct speed
+        m_drive->DriveToVisionTarget(-0.25);  // TODO Set correct speed
         m_autoState = kWaitForDriveToTarget;
         break;
     case kWaitForDriveToTarget:
@@ -303,13 +303,13 @@ void EntechRobot::AutonomousPeriodic()
     case kDriveBackward:
         switch (m_initialTurn) {
         case kLeft60:
-            m_drive->DriveHeading(120.0, 0.60, 0.5); // need values!
+            m_drive->DriveHeading(120.0, 0.45, 0.75); // need values!
             break;
         case kRight60:
-            m_drive->DriveHeading(-120.0, 0.60, 0.5); // need values!
+            m_drive->DriveHeading(-120.0, 0.45, 0.75); // need values!
             break;
         case kStraight:
-            m_drive->DriveHeading(0.0, 0.60, 0.5); // need values!
+            m_drive->DriveHeading(180.0, 0.30, 1.8); // need values!
             break;
         }
         m_autoState = kWaitForDriveBackward;
@@ -322,15 +322,16 @@ void EntechRobot::AutonomousPeriodic()
     case kDriveLateral:
         m_dropper->SetMode(DropperSubsystem::kManual);
         m_dropper->SetPosition(DropperSubsystem::kUp);
+        m_drive->SetYawDirection(0.0);
         switch (m_initialTurn) {
         case kLeft60:
-            m_drive->DriveHeading(90.0, 0.60, 1.0); // need values!
+            m_drive->DriveHeading(90.0, 0.00, 0.0); // need values!
             break;
         case kRight60:
-            m_drive->DriveHeading(-90.0, 0.60, 1.0); // need values!
+            m_drive->DriveHeading(-90.0, 0.00, 0.0); // need values!
             break;
         case kStraight:
-            m_drive->DriveHeading(90.0, 0.60, 2.0); // need values!
+            m_drive->DriveHeading(90.0, 0.80, 2.0); // need values!
             break;
         }
         m_autoState = kWaitForDriveLateral;
@@ -343,13 +344,11 @@ void EntechRobot::AutonomousPeriodic()
     case kDriveForward:
         switch (m_initialTurn) {
         case kLeft60:
-            m_drive->DriveHeading(0.0, 0.60, 2.0); // need values!
-            break;
         case kRight60:
-            m_drive->DriveHeading(0.0, 0.60, 2.0); // need values!
+            m_drive->DriveHeading(0.0, 0.70, 3.0); // need values!
             break;
         case kStraight:
-            m_drive->DriveHeading(0.0, 0.60, 3.0); // need values!
+            m_drive->DriveHeading(0.0, 0.70, 3.5); // need values!
             break;
         }
         m_autoState = kWaitForDriveForward;

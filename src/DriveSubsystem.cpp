@@ -481,6 +481,6 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("Vision Distance", m_visionDistance);
     SmartDashboard::PutNumber("Missing RPi Count", m_missingRPiCount);
     SmartDashboard::PutNumber("JoystickLateral", m_lateralJS);
-    //SmartDashboard::PutNumber("JoystickX", m_joystick->GetX());
-    //SmartDashboard::PutNumber("JoystickY", m_joystick->GetY());
+    SmartDashboard::PutNumber("JoystickX", m_joystick->GetX());
+    SmartDashboard::PutNumber("JoystickY", m_joystick->GetY());
 }

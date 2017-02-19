@@ -3,7 +3,7 @@
 #include "DropperSubsystem.h"
 #include "RobotConstants.h"
 
-const int c_pinSensesUntilDrop = 4;
+const int c_pinSensesUntilDrop = 0;
 
 DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
     : RobotSubsystem(pRobot, name)
@@ -129,9 +129,9 @@ void DropperSubsystem::SetPosition(DropperPosition position)
 
 bool DropperSubsystem::IsGearDropped()
 {
-    if (IsPinSensed() && (m_timer->Get() > 0.25))
-            return true;
-        return false;
+    if (m_autoTriggered && (m_timer->Get() > 0.05))
+        return true;
+    return false;
 }
 
 // One liner necessary because RoboRio digital inputs are pulled high
