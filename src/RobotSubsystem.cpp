@@ -24,6 +24,13 @@ void RobotSubsystem::UpdateDashboard(void)
     warning_issued = true;
   }
 }
+ void RobotSubsystem::LogHeader(FILE *fp)
+ {
+ }
+
+ void RobotSubsystem::LogData(FILE *fp)
+ {
+ }
 
 /********************************** Init Routines **********************************/
 

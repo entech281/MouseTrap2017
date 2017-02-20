@@ -3,6 +3,8 @@
 #include "EntechRobot.h"
 #include "RobotConstants.h"
 
+#define LOG_FILE "EntechRobotLog.csv"
+
 // Sample do nothing change
 
 EntechRobot::EntechRobot()
@@ -13,6 +15,7 @@ EntechRobot::EntechRobot()
     , m_pickup(NULL)
     , m_compressor(NULL)
     , m_lw(NULL)
+    , m_logFP(NULL)
     , m_joystick(NULL)
     , m_climbButton(NULL)
     , m_descendButton(NULL)
@@ -34,6 +37,39 @@ EntechRobot::EntechRobot()
 }
 
 EntechRobot::~EntechRobot() {}
+
+void EntechRobot::OpenLog(void)
+{
+    m_logFP = fopen(LOG_FILE, "w");
+    if (m_logFP) {
+        fputs("autoState,",m_logFP);
+        
+        for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
+             it != m_robotSubsystems.end(); ++it) {
+            (*it)->LogHeader(m_logFP);
+        }
+        fputs("\n",m_logFP);
+    }
+}
+
+void EntechRobot::WriteLog(void)
+{
+    if (m_logFP) {
+        fprintf("%d,",m_autoState);
+        for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
+             it != m_robotSubsystems.end(); ++it) {
+            (*it)->LogData(m_logFP);
+        }
+        fputs("\n",m_logFP);
+    }
+}
+
+void EntechRobot::CloseLog(void)
+{
+    if (m_logFP)
+        fclose(m_logFP);
+    m_logFP = NULL;
+}
 
 void EntechRobot::RobotInit()
 {
@@ -145,6 +181,8 @@ bool EntechRobot::IsGearDropTriggered(void)
 
 void EntechRobot::DisabledInit()
 {
+    CloseLog();
+    
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->DisabledInit();
@@ -167,6 +205,8 @@ void EntechRobot::DisabledPeriodic()
 
 void EntechRobot::TeleopInit()
 {
+    CloseLog();
+
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->TeleopInit();
@@ -217,6 +257,7 @@ void EntechRobot::AutonomousInit()
 
     if (m_autonomousActive) {
         m_autoState = kStart;
+        OpenLog();
     } else {
         m_autoState = kDone;
     }
@@ -370,7 +411,8 @@ void EntechRobot::AutonomousPeriodic()
          it != m_robotSubsystems.end(); ++it) {
         (*it)->AutonomousPeriodic();
     }
-
+    
+    WriteLog();
     UpdateDashboard();
 }
 

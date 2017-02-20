@@ -60,6 +60,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_rpi_lastseq(-1)
     , m_rpi_seq(0)
     , m_visionTargetsFound(false)
+    , m_targetsBelowMinDistance(false)
     , m_visionLateral(0.0)
     , m_lateralDecay(0.0)
     , m_visionDistance(100.0)
@@ -302,21 +303,25 @@ void DriveSubsystem::RobotInit()
 void DriveSubsystem::DisabledInit()
 {
     m_currMode = kManual;
+    m_targetsBelowMinDistance = false;
 }
 
 void DriveSubsystem::TeleopInit()
 {
     m_currMode = kManual;
+    m_targetsBelowMinDistance = false;
 }
 
 void DriveSubsystem::AutonomousInit()
 {
     m_currMode = kManual;
+    m_targetsBelowMinDistance = false;
 }
 
 void DriveSubsystem::TestInit()
 {
     m_currMode = kManual;
+    m_targetsBelowMinDistance = false;
 }
 
 /********************************** Periodic Routines **********************************/
@@ -330,8 +335,11 @@ void DriveSubsystem::GetVisionData()
         m_missingRPiCount = 0;
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
+        m_lateralDecay = m_visionLateral/10.0;
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
-        m_lateralDecay = m_visionLateral/100.0;
+        if (m_visionDistance < c_minVisionDistance) {
+            m_targetsBelowMinDistance = true;
+        }
     } else {
         ++m_missingRPiCount;
         m_visionLateral -= m_lateralDecay;
@@ -403,13 +411,14 @@ void DriveSubsystem::TeleopPeriodic()
     } else {
         m_currMode = kManual;
     }
-    if (m_visionTargetsFound && m_autoDriveButton->GetBool()) {
+    if ((m_visionTargetsFound || m_targetsBelowMinDistance) && m_autoDriveButton->GetBool()) {
         if (m_currMode != kAutomatic) {
             DriveToVisionTarget();
         }
     } else {
         if (m_currMode != kManual) {
             AbortDriveToVisionTarget();
+            m_targetsBelowMinDistance = false;
         }
     }
     switch (m_currMode) {
@@ -467,8 +476,9 @@ void DriveSubsystem::DriveAutomatic()
             jsY = m_joystick->GetY();
         }
         jsX = m_lateralJS;
-        if (m_visionDistance < c_minVisionDistance) {
-        	jsX = 0.0;
+        if (m_targetsBelowMinDistance) {
+            jsX = 0.0;
+            jsY = -0.1;
         }
         m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, m_yawJStwist, 0.0);
     }
@@ -542,6 +552,18 @@ void DriveSubsystem::DriveManual()
 void DriveSubsystem::TestPeriodic()
 {
     GetVisionData();
+}
+
+void DriveSubsystem::LogHeader(FILE *fp)
+{
+    fputs("rpi_seq,missingRPiCount,vTargetsFound,TargetsBelowMin,vLateral,vDist,rawFwdJS,rawLatJS,rawYawJS,",fp);
+}
+
+void DriveSubsystem::LogData(FILE *fp)
+{
+    fprintf(fp,"%d,%d,%d,%d,%lf,%lf,%lf,%lf,%lf,",m_rpi_seq,m_missingRPiCount,
+            m_visionTargetsFound,m_targetsBelowMinDistance,m_visionLateral,m_visionDistance,
+            m_forwardJS,m_lateralJS,m_yawJStwist);
 }
 
 void DriveSubsystem::UpdateDashboard(void)
