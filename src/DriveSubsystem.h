@@ -106,5 +106,6 @@ private:
     OperatorButton *m_yawToM60Button;
     OperatorButton *m_resetYawToZeroButton;
     OperatorButton *m_autoDriveButton;
+    OperatorButton *m_climbModeButton;
 };
 #endif
