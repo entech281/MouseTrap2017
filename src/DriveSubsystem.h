@@ -48,12 +48,13 @@ public:
     virtual void UpdateDashboard(void);
 
 private:
-    enum DriveMode { kManual, kAutomatic, kDeadRecon };
+    enum DriveMode { kManual, kAutomatic, kDeadRecon, kClimb };
     void SetMode(DriveMode mode);
     void GetVisionData(void);
     void DriveAutomatic(void);
     void DriveManual(void);
     void DriveDeadRecon(void);
+    double GetRobotYaw(void);
 
     EntechRobot *m_pRobot;
     DriveMode m_currMode;

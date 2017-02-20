@@ -89,6 +89,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_yawToM60Button(NULL)
     , m_resetYawToZeroButton(NULL)
     , m_autoDriveButton(NULL)
+    , m_climbModeButton(NULL)
 {
 }
 
@@ -109,23 +110,15 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 void DriveSubsystem::DriveToVisionTarget(double speed)
 {
 #if NAVX || IMU_MXP
-#if NAVX
-    if (m_ahrs) {
-        double yaw = m_ahrs->GetYaw();
-#endif
-#if IMU_MXP
-    if (m_imu) {
-        double yaw = m_imu->GetYaw();
-#endif
-        if (yaw < -30.0) {
-            SetYawDirection(-60.0);
-        } else if (yaw > 30.0) {
-            SetYawDirection(60.0);
-        } else {
-            SetYawDirection(0.0);
-        }
-        HoldYaw(true);
+    double yaw = GetRobotYaw();
+    if (yaw < -30.0) {
+        SetYawDirection(-60.0);
+    } else if (yaw > 30.0) {
+        SetYawDirection(60.0);
+    } else {
+        SetYawDirection(0.0);
     }
+    HoldYaw(true);
 #endif
     
     m_lateralController->SetSetpoint(0.0);
@@ -162,40 +155,35 @@ void DriveSubsystem::FieldAbsoluteDriving(bool active)
 
 void DriveSubsystem::HoldYaw(bool active)
 {
-#if NAVX || IMU_MXP
     m_holdYaw = active;
-    if (m_holdYaw) {
-        m_yawController->Enable();
-    } else {
-        m_yawController->Disable();
+#if NAVX || IMU_MXP
+    if (m_yawController) {
+        if (m_holdYaw) {
+            m_yawController->Enable();
+        } else {
+            m_yawController->Disable();
+        }
     }
 #endif
 }
 
 void DriveSubsystem::SetYawDirection(double angle)
 {
-#if NAVX || IMU_MXP
     m_yawAngle = angle;
+#if NAVX || IMU_MXP
     m_yawController->SetSetpoint(m_yawAngle);
 #endif
 }
 
 bool DriveSubsystem::IsYawCorrect(void)
 {
-#if NAVX
-    if (fabs(m_ahrs->GetYaw() - m_yawAngle) < 3.0) {
+#if NAVX || IMU_MXP
+    if (fabs(GetRobotYaw() - m_yawAngle) < 3.0) {
         return true;
     }
     return false;
 #else
-#if IMU_MXP
-    if (fabs(m_imu->GetYaw() - m_yawAngle) < 3.0) {
-        return true;
-    }
-    return false;
-#else
-     return true;
-#endif
+    return true;
 #endif
 }
 
@@ -357,6 +345,19 @@ void DriveSubsystem::DisabledPeriodic()
     m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
 }
 
+double DriveSubsystem::GetRobotYaw(void)
+{
+#if NAVX
+    if (m_ahrs)
+        return m_ahrs->GetYaw();
+#endif
+#if IMU_MXP
+    if (m_imu)
+        return m_imu->GetYaw();
+#endif
+    return 0.0;
+}
+
 void DriveSubsystem::TeleopPeriodic()
 {
     GetVisionData();
@@ -367,12 +368,7 @@ void DriveSubsystem::TeleopPeriodic()
     }
 #if NAVX || IMU_MXP
     if (m_holdYawToggleButton->Get() == OperatorButton::kJustPressed) {
-#if NAVX
-    	SetYawDirection(m_ahrs->GetYaw());
-#endif
-#if IMU_MXP
-    	SetYawDirection(m_imu->GetYaw());
-#endif
+    	SetYawDirection(GetRobotYaw());
     	HoldYaw(!m_holdYaw);
     }
     if (m_yawToP60Button->Get() == OperatorButton::kJustPressed) {
@@ -391,6 +387,22 @@ void DriveSubsystem::TeleopPeriodic()
         m_ahrs->ZeroYaw();
     }
 #endif
+    if (m_climbModeButton->GetBool()) {
+#if NAVX || IMU_MXP
+        double yaw = GetRobotYaw();
+        if ((yaw > -120.0) && (yaw < 0.0)) {
+            SetYawDirection(-60.0);
+        } else if ((yaw < 120.0) && (yaw > 0.0)) {
+            SetYawDirection(60.0);
+        } else {
+            SetYawDirection(179.5);
+        }
+        HoldYaw(true);
+#endif
+        m_currMode = kClimb;
+    } else {
+        m_currMode = kManual;
+    }
     if (m_visionTargetsFound && m_autoDriveButton->GetBool()) {
         if (m_currMode != kAutomatic) {
             DriveToVisionTarget();
@@ -403,6 +415,7 @@ void DriveSubsystem::TeleopPeriodic()
     switch (m_currMode) {
     case kManual:
     case kDeadRecon:
+    case kClimb:
         DriveManual();
         break;
     case kAutomatic:
@@ -425,6 +438,7 @@ void DriveSubsystem::AutonomousPeriodic()
         }
         break;
     case kManual:
+    case kClimb:
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
         break;
     case kAutomatic:
@@ -511,12 +525,12 @@ void DriveSubsystem::DriveManual()
 
     gyroAngle = 0.0;
 #if NAVX
-    if (m_fieldAbsolute && m_ahrs) {
+    if (m_fieldAbsolute && (m_currMode != kClimb) && m_ahrs) {
     	gyroAngle = m_ahrs->GetAngle();
     }
 #endif
 #if IMU_MXP
-    if (m_fieldAbsolute && m_imu) {
+    if (m_fieldAbsolute && (m_currMode != kClimb) && m_imu) {
     	gyroAngle = m_imu->GetAngle();
     }
 #endif
