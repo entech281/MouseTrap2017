@@ -22,7 +22,7 @@ public:
 
 protected:
     void UpdateDashboard();
-    void OpenLog(const char *file_name, const char *mode = "w");
+    void OpenLog(void);
     void WriteLog(void);
     void CloseLog(void);
 

@@ -55,7 +55,7 @@ void EntechRobot::OpenLog(void)
 void EntechRobot::WriteLog(void)
 {
     if (m_logFP) {
-        fprintf("%d,",m_autoState);
+        fprintf(m_logFP,"%d,",m_autoState);
         for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
              it != m_robotSubsystems.end(); ++it) {
             (*it)->LogData(m_logFP);
