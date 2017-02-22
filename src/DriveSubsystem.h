@@ -46,14 +46,17 @@ public:
     virtual void TeleopPeriodic();
     virtual void TestPeriodic();
     virtual void UpdateDashboard(void);
+    virtual void LogHeader(FILE *fp);
+    virtual void LogData(FILE *fp);
 
 private:
-    enum DriveMode { kManual, kAutomatic, kDeadRecon };
+    enum DriveMode { kManual, kAutomatic, kDeadRecon, kClimb };
     void SetMode(DriveMode mode);
     void GetVisionData(void);
     void DriveAutomatic(void);
     void DriveManual(void);
     void DriveDeadRecon(void);
+    double GetRobotYaw(void);
 
     EntechRobot *m_pRobot;
     DriveMode m_currMode;
@@ -76,6 +79,7 @@ private:
     int    m_rpi_lastseq;
     int    m_rpi_seq;
     bool   m_visionTargetsFound;
+    bool   m_targetsBelowMinDistance;
     double m_visionLateral;
     double m_lateralDecay;
     double m_visionDistance;

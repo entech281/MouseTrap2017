@@ -22,6 +22,9 @@ public:
 
 protected:
     void UpdateDashboard();
+    void OpenLog(void);
+    void WriteLog(void);
+    void CloseLog(void);
 
     virtual void RobotInit();
     virtual void DisabledInit();
@@ -42,6 +45,8 @@ private:
     PickUpSubsystem *m_pickup;
     Compressor *m_compressor;
     LiveWindow *m_lw;
+
+    FILE *m_logFP;
 
     Joystick  *m_joystick;
     OperatorButton *m_climbButton;

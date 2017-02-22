@@ -1,6 +1,8 @@
 #ifndef ROBOT_SUBSYSTEM_H
 #define ROBOT_SUBSYSTEM_H
 
+#include <stdio.h>
+
 class EntechRobot;
 
 class RobotSubsystem {
@@ -13,6 +15,8 @@ public:
 
     const char* GetName(void);
     virtual void UpdateDashboard(void);
+    virtual void LogHeader(FILE *fp);
+    virtual void LogData(FILE *fp);
 
     /********************************** Init Routines **********************************/
 

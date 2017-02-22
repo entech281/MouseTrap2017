@@ -60,6 +60,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_rpi_lastseq(-1)
     , m_rpi_seq(0)
     , m_visionTargetsFound(false)
+    , m_targetsBelowMinDistance(false)
     , m_visionLateral(0.0)
     , m_lateralDecay(0.0)
     , m_visionDistance(100.0)
@@ -89,6 +90,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_yawToM60Button(NULL)
     , m_resetYawToZeroButton(NULL)
     , m_autoDriveButton(NULL)
+    , m_climbModeButton(NULL)
 {
 }
 
@@ -109,23 +111,15 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 void DriveSubsystem::DriveToVisionTarget(double speed)
 {
 #if NAVX || IMU_MXP
-#if NAVX
-    if (m_ahrs) {
-        double yaw = m_ahrs->GetYaw();
-#endif
-#if IMU_MXP
-    if (m_imu) {
-        double yaw = m_imu->GetYaw();
-#endif
-        if (yaw < -30.0) {
-            SetYawDirection(-60.0);
-        } else if (yaw > 30.0) {
-            SetYawDirection(60.0);
-        } else {
-            SetYawDirection(0.0);
-        }
-        HoldYaw(true);
+    double yaw = GetRobotYaw();
+    if (yaw < -30.0) {
+        SetYawDirection(-60.0);
+    } else if (yaw > 30.0) {
+        SetYawDirection(60.0);
+    } else {
+        SetYawDirection(0.0);
     }
+    HoldYaw(true);
 #endif
     
     m_lateralController->SetSetpoint(0.0);
@@ -162,40 +156,35 @@ void DriveSubsystem::FieldAbsoluteDriving(bool active)
 
 void DriveSubsystem::HoldYaw(bool active)
 {
-#if NAVX || IMU_MXP
     m_holdYaw = active;
-    if (m_holdYaw) {
-        m_yawController->Enable();
-    } else {
-        m_yawController->Disable();
+#if NAVX || IMU_MXP
+    if (m_yawController) {
+        if (m_holdYaw) {
+            m_yawController->Enable();
+        } else {
+            m_yawController->Disable();
+        }
     }
 #endif
 }
 
 void DriveSubsystem::SetYawDirection(double angle)
 {
-#if NAVX || IMU_MXP
     m_yawAngle = angle;
+#if NAVX || IMU_MXP
     m_yawController->SetSetpoint(m_yawAngle);
 #endif
 }
 
 bool DriveSubsystem::IsYawCorrect(void)
 {
-#if NAVX
-    if (fabs(m_ahrs->GetYaw() - m_yawAngle) < 3.0) {
+#if NAVX || IMU_MXP
+    if (fabs(GetRobotYaw() - m_yawAngle) < 3.0) {
         return true;
     }
     return false;
 #else
-#if IMU_MXP
-    if (fabs(m_imu->GetYaw() - m_yawAngle) < 3.0) {
-        return true;
-    }
-    return false;
-#else
-     return true;
-#endif
+    return true;
 #endif
 }
 
@@ -314,21 +303,25 @@ void DriveSubsystem::RobotInit()
 void DriveSubsystem::DisabledInit()
 {
     m_currMode = kManual;
+    m_targetsBelowMinDistance = false;
 }
 
 void DriveSubsystem::TeleopInit()
 {
     m_currMode = kManual;
+    m_targetsBelowMinDistance = false;
 }
 
 void DriveSubsystem::AutonomousInit()
 {
     m_currMode = kManual;
+    m_targetsBelowMinDistance = false;
 }
 
 void DriveSubsystem::TestInit()
 {
     m_currMode = kManual;
+    m_targetsBelowMinDistance = false;
 }
 
 /********************************** Periodic Routines **********************************/
@@ -342,8 +335,11 @@ void DriveSubsystem::GetVisionData()
         m_missingRPiCount = 0;
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
+        m_lateralDecay = m_visionLateral/10.0;
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
-        m_lateralDecay = m_visionLateral/100.0;
+        if (m_visionDistance < c_minVisionDistance) {
+            m_targetsBelowMinDistance = true;
+        }
     } else {
         ++m_missingRPiCount;
         m_visionLateral -= m_lateralDecay;
@@ -357,6 +353,19 @@ void DriveSubsystem::DisabledPeriodic()
     m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
 }
 
+double DriveSubsystem::GetRobotYaw(void)
+{
+#if NAVX
+    if (m_ahrs)
+        return m_ahrs->GetYaw();
+#endif
+#if IMU_MXP
+    if (m_imu)
+        return m_imu->GetYaw();
+#endif
+    return 0.0;
+}
+
 void DriveSubsystem::TeleopPeriodic()
 {
     GetVisionData();
@@ -367,12 +376,7 @@ void DriveSubsystem::TeleopPeriodic()
     }
 #if NAVX || IMU_MXP
     if (m_holdYawToggleButton->Get() == OperatorButton::kJustPressed) {
-#if NAVX
-    	SetYawDirection(m_ahrs->GetYaw());
-#endif
-#if IMU_MXP
-    	SetYawDirection(m_imu->GetYaw());
-#endif
+    	SetYawDirection(GetRobotYaw());
     	HoldYaw(!m_holdYaw);
     }
     if (m_yawToP60Button->Get() == OperatorButton::kJustPressed) {
@@ -391,18 +395,36 @@ void DriveSubsystem::TeleopPeriodic()
         m_ahrs->ZeroYaw();
     }
 #endif
-    if (m_visionTargetsFound && m_autoDriveButton->GetBool()) {
+    if (m_climbModeButton->GetBool()) {
+#if NAVX || IMU_MXP
+        double yaw = GetRobotYaw();
+        if ((yaw > -120.0) && (yaw < 0.0)) {
+            SetYawDirection(-60.0);
+        } else if ((yaw < 120.0) && (yaw > 0.0)) {
+            SetYawDirection(60.0);
+        } else {
+            SetYawDirection(179.5);
+        }
+        HoldYaw(true);
+#endif
+        m_currMode = kClimb;
+    } else {
+        m_currMode = kManual;
+    }
+    if ((m_visionTargetsFound || m_targetsBelowMinDistance) && m_autoDriveButton->GetBool()) {
         if (m_currMode != kAutomatic) {
             DriveToVisionTarget();
         }
     } else {
         if (m_currMode != kManual) {
             AbortDriveToVisionTarget();
+            m_targetsBelowMinDistance = false;
         }
     }
     switch (m_currMode) {
     case kManual:
     case kDeadRecon:
+    case kClimb:
         DriveManual();
         break;
     case kAutomatic:
@@ -425,6 +447,7 @@ void DriveSubsystem::AutonomousPeriodic()
         }
         break;
     case kManual:
+    case kClimb:
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
         break;
     case kAutomatic:
@@ -453,8 +476,9 @@ void DriveSubsystem::DriveAutomatic()
             jsY = m_joystick->GetY();
         }
         jsX = m_lateralJS;
-        if (m_visionDistance < c_minVisionDistance) {
-        	jsX = 0.0;
+        if (m_targetsBelowMinDistance) {
+            jsX = 0.0;
+            jsY = -0.1;
         }
         m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, m_yawJStwist, 0.0);
     }
@@ -511,12 +535,12 @@ void DriveSubsystem::DriveManual()
 
     gyroAngle = 0.0;
 #if NAVX
-    if (m_fieldAbsolute && m_ahrs) {
+    if (m_fieldAbsolute && (m_currMode != kClimb) && m_ahrs) {
     	gyroAngle = m_ahrs->GetAngle();
     }
 #endif
 #if IMU_MXP
-    if (m_fieldAbsolute && m_imu) {
+    if (m_fieldAbsolute && (m_currMode != kClimb) && m_imu) {
     	gyroAngle = m_imu->GetAngle();
     }
 #endif
@@ -528,6 +552,18 @@ void DriveSubsystem::DriveManual()
 void DriveSubsystem::TestPeriodic()
 {
     GetVisionData();
+}
+
+void DriveSubsystem::LogHeader(FILE *fp)
+{
+    fputs("rpi_seq,missingRPiCount,vTargetsFound,TargetsBelowMin,vLateral,vDist,rawFwdJS,rawLatJS,rawYawJS,",fp);
+}
+
+void DriveSubsystem::LogData(FILE *fp)
+{
+    fprintf(fp,"%d,%d,%d,%d,%lf,%lf,%lf,%lf,%lf,",m_rpi_seq,m_missingRPiCount,
+            m_visionTargetsFound,m_targetsBelowMinDistance,m_visionLateral,m_visionDistance,
+            m_forwardJS,m_lateralJS,m_yawJStwist);
 }
 
 void DriveSubsystem::UpdateDashboard(void)

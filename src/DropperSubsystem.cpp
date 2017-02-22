@@ -60,6 +60,16 @@ void DropperSubsystem::UpdateDashboard()
     }
 }
 
+void DropperSubsystem::LogHeader(FILE *fp)
+{
+    fputs("pin_sensed,drop_pos,gear_dropped,",fp);
+}
+
+void DropperSubsystem::LogData(FILE *fp)
+{
+    fprintf(fp,"%d,%d,%d,",IsPinSensed(),m_position,IsGearDropped());
+}
+
 
 /********************************** Periodic Routines **********************************/
 
