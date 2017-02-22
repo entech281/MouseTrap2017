@@ -22,7 +22,7 @@ const bool c_krrmotor_inverted = true;
 
 // Driver Joystick buttons
 const int c_jsthumb_BTNid = 2;
-cosnt int c_climbMode_BTNid = 3;
+const int c_climbMode_BTNid = 3;
 const int c_jsYawReset_BTNid = 5;
 const int c_jsfieldAbs_BTNid = 6;
 const int c_jsYawToP60_BTNid = 7;
@@ -36,6 +36,7 @@ const int c_opautodrop_BTNid = 2;
 const int c_opdescend_BTNid = 3;
 const int c_oppickup_BTNid = 7;
 const int c_opdrop_BTNid = 8;
+const int c_opclimbgrab_BTNid = 4;
 
 // Digital Inputs/Outputs
 const int c_dropperSensor = 0;

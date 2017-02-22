@@ -16,6 +16,7 @@ EntechRobot::EntechRobot()
     , m_joystick(NULL)
     , m_climbButton(NULL)
     , m_descendButton(NULL)
+    , m_climbgrabButton(NULL)
     , m_dropButton(NULL)
     , m_pickupButton(NULL)
     , m_autodropButton(NULL)
@@ -54,6 +55,7 @@ void EntechRobot::RobotInit()
     
     m_joystick = new Joystick(c_operatorJSid);
     if (m_joystick) {
+        m_climbgrabButton = new OperatorButton(m_joystick,c_opclimbgrab_BTNid);
         m_climbButton = new OperatorButton(m_joystick,c_opclimb_BTNid);
         m_descendButton = new OperatorButton(m_joystick,c_opdescend_BTNid);
         m_pickupButton = new OperatorButton(m_joystick,c_oppickup_BTNid);
@@ -184,6 +186,9 @@ void EntechRobot::TeleopPeriodic()
         }
         if (m_descendButton->GetBool()) {
             m_climber->Backward();
+        }
+        if (m_climbgrabButton->GetBool()) {
+            m_climber->Grab();
         }
         if (m_pickupButton ->GetBool()) {
             m_pickup->SetPosition(PickUpSubsystem::kDown);

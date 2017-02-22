@@ -17,6 +17,7 @@ public:
     void Off(void);
     void Forward(void);
     void Backward(void);
+    void Grab(void);
 
     virtual void UpdateDashboard(void);
 

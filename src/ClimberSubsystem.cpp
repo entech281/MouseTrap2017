@@ -25,15 +25,23 @@ void ClimberSubsystem::Off()
 // Sets the rope climb turn speed to on/-1 when the "button" is pressed.
 void ClimberSubsystem::Forward()
 {
-		m_speed = -0.5;
+		m_speed = -1.0;
 		m_timer->Stop();
 		m_timer->Reset();
 		m_timer->Start();
 }
 
+void ClimberSubsystem::Grab()
+{
+        m_speed = -0.5;
+        m_timer->Stop();
+        m_timer->Reset();
+        m_timer->Start();
+}
+
 void ClimberSubsystem::Backward()
 {
-        m_speed = 0.5;
+        m_speed = 1.0;
         m_timer->Stop();
         m_timer->Reset();
         m_timer->Start();

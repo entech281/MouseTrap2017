@@ -46,6 +46,7 @@ private:
     Joystick  *m_joystick;
     OperatorButton *m_climbButton;
     OperatorButton *m_descendButton;
+    OperatorButton *m_climbgrabButton;
     OperatorButton *m_dropButton;
     OperatorButton *m_pickupButton;
     OperatorButton *m_autodropButton;
