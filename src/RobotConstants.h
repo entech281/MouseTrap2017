@@ -1,6 +1,8 @@
 #ifndef _ROBOTCONSTANTS_H
 #define _ROBOTCONSTANTS_H
 
+#define PICKUP  0
+
 // Joystick Ports
 const int c_driverJSid = 0;
 const int c_operatorJSid = 1;
@@ -49,5 +51,7 @@ const int c_dropperSolenoidChannel2  = 2;
 const int c_dropperSolenoidChannel1  = 3;
 const int c_pickupSolenoidChannel1   = 0;
 const int c_pickupSolenoidChannel2   = 1;
+const int c_shooterSolenoidChannel1   = 0;
+const int c_shooterSolenoidChannel2   = 1;
 
 #endif

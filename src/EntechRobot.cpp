@@ -81,7 +81,9 @@ void EntechRobot::RobotInit()
     m_climber = new ClimberSubsystem(this, "climber");
     m_shooter = new ShooterSubsystem(this, "shooter");
     m_dropper = new DropperSubsystem(this, "dropper");
+#if PICKUP
     m_pickup = new PickUpSubsystem(this, "pickup");
+#endif
 
     m_compressor = new frc::Compressor(c_compressorPCMid);
     if (m_compressor) {
@@ -230,10 +232,12 @@ void EntechRobot::TeleopPeriodic()
         if (m_climbgrabButton->GetBool()) {
             m_climber->Grab();
         }
-        if (m_pickupButton ->GetBool()) {
-            m_pickup->SetPosition(PickUpSubsystem::kDown);
-        }else{
-            m_pickup->SetPosition(PickUpSubsystem::kUp);
+        if (m_pickup) {
+        	if (m_pickupButton ->GetBool()) {
+        		m_pickup->SetPosition(PickUpSubsystem::kDown);
+        	} else {
+        		m_pickup->SetPosition(PickUpSubsystem::kUp);
+        	}
         }
         if (m_autodropButton->GetBool()) {
             m_dropper->SetMode(DropperSubsystem::kAutomatic);
@@ -294,12 +298,13 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kShootFuelLoad:
-        m_shooter->ShootAll();
+        m_shooter->TriggerOpen();
         m_autoState = kWaitForShootFuelLoad;
         break;
     case kWaitForShootFuelLoad:
         if (m_autoTimer->Get() > 2.5) {
-            m_shooter->Off();
+            m_shooter->Forward(0.0);
+            m_shooter->TriggerClose();
             if (m_initialTurn == kStraight) {
                 m_drive->SetYawDirection(0.0);
                 m_autoState = kDriveToTarget;
