@@ -27,7 +27,8 @@ public:
     virtual ~DriveSubsystem();
 
     void DriveHeading(double angle, double speed, double time);
-    void DriveToVisionTarget(double speed = 1.0);
+    void DriveToVisionTarget(double speed = 10.0);
+    void AlignWithTargetFacing(double yaw_angle);
     void AbortDriveToVisionTarget(void);
     bool Done(void);
     void FieldAbsoluteDriving(bool active);

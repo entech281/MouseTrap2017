@@ -73,7 +73,7 @@ private:
                      kDriveForward, kWaitForDriveForward,
                      kDone };
     AutoState m_autoState;
-    enum BoilerDistance { kNear, kMiddle, kFar };
+    enum BoilerDistance { kNear, kMiddle, kFar, kSiderail };
     BoilerDistance m_boilerDistance;
     enum InitialTurn { kRight60, kStraight, kLeft60 };
     InitialTurn m_initialTurn;

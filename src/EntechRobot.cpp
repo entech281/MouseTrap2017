@@ -162,18 +162,23 @@ void EntechRobot::DetermineAutonomousSetup(void)
     } else {
     	// impossible
     }
+    if (boiler_to_left)
+    	m_boilerDistance = kSiderail;
 
     // Set shooter speed based on boiler distance
     m_shooterSpeed = 0.0;
     switch (m_boilerDistance) {
     case kNear:
-        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.75);
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.7);
         break;
     case kMiddle:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", -0.9);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", -0.8);
         break;
     case kFar:
-        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -1.0);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -0.9);
+        break;
+    case kSiderail:
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", -0.6);
         break;
     }
 }
@@ -286,6 +291,9 @@ void EntechRobot::AutonomousPeriodic()
     switch(m_autoState) {
     case kStart:
         m_autoState = kTurnOnShooter;
+        if (m_boilerDistance == kSiderail) {
+        	m_autoState = kInitialDrive;
+        }
         break;
     case kTurnOnShooter:
     	m_shooter->Forward(m_shooterSpeed);
@@ -308,6 +316,8 @@ void EntechRobot::AutonomousPeriodic()
             if (m_initialTurn == kStraight) {
                 m_drive->SetYawDirection(0.0);
                 m_autoState = kDriveToTarget;
+            } else if (m_boilerDistance == kSiderail) {
+            	m_autoState = kDone;
             } else {
                 m_autoState = kInitialDrive;
             }
@@ -372,8 +382,10 @@ void EntechRobot::AutonomousPeriodic()
             // skip lateral drive for initial turn cases
             switch (m_initialTurn) {
             case kLeft60:
-            case kRight60:
                 m_autoState = kDriveForward;
+                break;
+            case kRight60:
+                m_autoState = kDone;  // TODO patch in motion to the side rail
                 break;
             case kStraight:
                 m_autoState = kDriveLateral;
@@ -462,6 +474,9 @@ void EntechRobot::UpdateDashboard()
         break;
     case kFar:
         SmartDashboard::PutString("Boiler Distance", "Far");
+        break;
+    case kSiderail:
+        SmartDashboard::PutString("Boiler Distance", "Siderail");
         break;
     }
     SmartDashboard::PutNumber("Shooter Speed",m_shooterSpeed);

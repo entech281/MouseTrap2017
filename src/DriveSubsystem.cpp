@@ -96,98 +96,6 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
 
 DriveSubsystem::~DriveSubsystem() {}
 
-void DriveSubsystem::DriveHeading(double angle, double speed, double time)
-{
-    m_dir = angle*M_PI/180.0;
-    m_speed = speed;
-    m_time = time;
-    m_currMode = kDeadRecon;
-    m_timer->Stop();
-    m_timer->Reset();
-    m_timer->Start();
-    m_currMode = kDeadRecon;
-}
-
-void DriveSubsystem::DriveToVisionTarget(double speed)
-{
-#if NAVX || IMU_MXP
-    double yaw = GetRobotYaw();
-    if (yaw < -30.0) {
-        SetYawDirection(-60.0);
-    } else if (yaw > 30.0) {
-        SetYawDirection(60.0);
-    } else {
-        SetYawDirection(0.0);
-    }
-    HoldYaw(true);
-#endif
-    
-    m_lateralController->SetSetpoint(0.0);
-    m_lateralController->Enable();
-    m_forwardJS = speed;
-    // m_distanceController->SetSetpoint(0.0);
-    // m_distanceController->Enable();
-
-    m_currMode = kAutomatic;
-}
-
-void DriveSubsystem::AbortDriveToVisionTarget(void)
-{
-#if NAVX || IMU_MXP
-    if (!m_holdYaw)
-        m_yawController->Disable();
-#endif
-    m_lateralController->Disable();
-    // m_distanceController->Disable();
-    m_currMode = kManual;
-}
-
-bool DriveSubsystem::Done(void)
-{
-    if (m_currMode == kManual) 
-        return true;
-    return false;
-}
-
-void DriveSubsystem::FieldAbsoluteDriving(bool active)
-{
-    m_fieldAbsolute = active;
-}
-
-void DriveSubsystem::HoldYaw(bool active)
-{
-    m_holdYaw = active;
-#if NAVX || IMU_MXP
-    if (m_yawController) {
-        if (m_holdYaw) {
-            m_yawController->Enable();
-        } else {
-            m_yawController->Disable();
-        }
-    }
-#endif
-}
-
-void DriveSubsystem::SetYawDirection(double angle)
-{
-    m_yawAngle = angle;
-#if NAVX || IMU_MXP
-    m_yawController->SetSetpoint(m_yawAngle);
-#endif
-}
-
-bool DriveSubsystem::IsYawCorrect(void)
-{
-#if NAVX || IMU_MXP
-    if (fabs(GetRobotYaw() - m_yawAngle) < 3.0) {
-        return true;
-    }
-    return false;
-#else
-    return true;
-#endif
-}
-
 /********************************** Init Routines **********************************/
 
 void DriveSubsystem::RobotInit()
@@ -322,6 +230,104 @@ void DriveSubsystem::TestInit()
 {
     m_currMode = kManual;
     m_targetsBelowMinDistance = false;
+}
+
+//======================= Public Methods ==========================================
+void DriveSubsystem::DriveHeading(double angle, double speed, double time)
+{
+    m_dir = angle*M_PI/180.0;
+    m_speed = speed;
+    m_time = time;
+    m_currMode = kDeadRecon;
+    m_timer->Stop();
+    m_timer->Reset();
+    m_timer->Start();
+    m_currMode = kDeadRecon;
+}
+
+void DriveSubsystem::DriveToVisionTarget(double speed)
+{
+#if NAVX || IMU_MXP
+    double yaw = GetRobotYaw();
+    if (yaw < -30.0) {
+        SetYawDirection(-60.0);
+    } else if (yaw > 30.0) {
+        SetYawDirection(60.0);
+    } else {
+        SetYawDirection(0.0);
+    }
+    HoldYaw(true);
+#endif
+
+    m_lateralController->SetSetpoint(0.0);
+    m_lateralController->Enable();
+    m_forwardJS = speed;
+    // m_distanceController->SetSetpoint(0.0);
+    // m_distanceController->Enable();
+
+    m_currMode = kAutomatic;
+}
+void DriveSubsystem::AlignWithTargetFacing(double yaw_angle)
+{
+	// TODO figure out
+	// If see target, remember initial yaw so know which lateral direction to go if lose target
+}
+
+void DriveSubsystem::AbortDriveToVisionTarget(void)
+{
+#if NAVX || IMU_MXP
+    if (!m_holdYaw)
+        m_yawController->Disable();
+#endif
+    m_lateralController->Disable();
+    // m_distanceController->Disable();
+    m_currMode = kManual;
+}
+
+bool DriveSubsystem::Done(void)
+{
+    if (m_currMode == kManual)
+        return true;
+    return false;
+}
+
+void DriveSubsystem::FieldAbsoluteDriving(bool active)
+{
+    m_fieldAbsolute = active;
+}
+
+void DriveSubsystem::HoldYaw(bool active)
+{
+    m_holdYaw = active;
+#if NAVX || IMU_MXP
+    if (m_yawController) {
+        if (m_holdYaw) {
+            m_yawController->Enable();
+        } else {
+            m_yawController->Disable();
+        }
+    }
+#endif
+}
+
+void DriveSubsystem::SetYawDirection(double angle)
+{
+    m_yawAngle = angle;
+#if NAVX || IMU_MXP
+    m_yawController->SetSetpoint(m_yawAngle);
+#endif
+}
+
+bool DriveSubsystem::IsYawCorrect(void)
+{
+#if NAVX || IMU_MXP
+    if (fabs(GetRobotYaw() - m_yawAngle) < 3.0) {
+        return true;
+    }
+    return false;
+#else
+    return true;
+#endif
 }
 
 /********************************** Periodic Routines **********************************/
@@ -465,7 +471,7 @@ void DriveSubsystem::DriveAutomatic()
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
     } else {
         // Either use joystick for speed from driver or what autonomous wants
-        if (m_forwardJS < 0.0) {
+        if (m_forwardJS < 1.0) {
             jsY = m_forwardJS;
             if ((m_visionDistance < 65.0) && (m_forwardJS < -0.2)) {
                 jsY = -0.2;
