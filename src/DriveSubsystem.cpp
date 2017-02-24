@@ -21,6 +21,7 @@
 
 const int c_countUntilIgnoreRPi = 60;
 const double c_minVisionDistance = 30.;
+const double c_yawTolerance = 3.0;
 
 #if NAVX || IMU_MXP
 const static double kYaw_P = 0.03;
@@ -54,7 +55,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_ahrs(NULL)
 #endif
 #if IMU_MXP
-	, m_imu(NULL)
+    , m_imu(NULL)
 #endif
     , m_missingRPiCount(0)
     , m_rpi_lastseq(-1)
@@ -269,8 +270,12 @@ void DriveSubsystem::DriveToVisionTarget(double speed)
 }
 void DriveSubsystem::AlignWithTargetFacing(double yaw_angle)
 {
-	// TODO figure out
-	// If see target, remember initial yaw so know which lateral direction to go if lose target
+    // TODO figure out
+    // If see target, remember initial yaw so know which lateral direction to go if lose target
+    SetYawDirection(yaw_angle);
+    HoldYaw(true);
+
+    m_currMode = kAutomatic;
 }
 
 void DriveSubsystem::AbortDriveToVisionTarget(void)
@@ -321,7 +326,7 @@ void DriveSubsystem::SetYawDirection(double angle)
 bool DriveSubsystem::IsYawCorrect(void)
 {
 #if NAVX || IMU_MXP
-    if (fabs(GetRobotYaw() - m_yawAngle) < 3.0) {
+    if (fabs(GetRobotYaw() - m_yawAngle) < c_yawTolerance) {
         return true;
     }
     return false;
@@ -339,9 +344,11 @@ void DriveSubsystem::GetVisionData()
     m_rpi_seq = m_ntTable->GetNumber(RPI_SEQUENCE,m_rpi_lastseq);
     if (m_rpi_seq != m_rpi_lastseq) {
         m_missingRPiCount = 0;
+        // Q: if vision sees targets go out of picture, does it return lateral "guess"
+        //    based on which side of the picture it last saw the targets? (e.g. -150.0)
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
-        m_lateralDecay = m_visionLateral/10.0;
+        m_lateralDecay = m_visionLateral/20.0;
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
         if (m_visionDistance < c_minVisionDistance) {
             m_targetsBelowMinDistance = true;
