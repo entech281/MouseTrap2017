@@ -272,6 +272,18 @@ void EntechRobot::TeleopPeriodic()
         }
     }
     
+    if (m_bp_shooterOnButton && m_bp_shooterOnButton->GetBool()) {
+        m_shooter->Forward(m_buttonpanel->GetX());
+        if (m_bp_fireButton && m_bp_fireButton->GetBool()) {
+            m_shooter->TriggerOpen();
+        } else {
+            m_shooter->TriggerClose();
+        }
+    } else {
+        m_shooter->Forward(0.0);
+        m_shooter->TriggerClose();
+    }
+
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->TeleopPeriodic();
