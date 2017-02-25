@@ -338,7 +338,7 @@ bool DriveSubsystem::IsYawCorrect(void)
 
 bool DriveSubsystem::IsAlignmentCorrect(void)
 {
-    if (IsYawCorrect() && m_visionTargetFound && (fabs(m_visionLateral) < c_lateralTolerence)) {
+    if (IsYawCorrect() && m_visionTargetsFound && (fabs(m_visionLateral) < c_lateralTolerence)) {
         return true;
     }
     return false;
@@ -369,7 +369,7 @@ void DriveSubsystem::GetVisionData()
 	        m_lateralController->Enable();
 	    } else {
 	        m_lateralController->Disable();
-                double deltaYaw = m_yawWhenTargetLastSeen - GetRobotYaw();
+                double deltaYaw = m_yawWhenTargetsLastSeen - GetRobotYaw();
                 // Yaw checks get priority over lateral positions for deciding which way the targets went
 	        if (deltaYaw < -5.0) {
                     m_lateralJS = -0.1;

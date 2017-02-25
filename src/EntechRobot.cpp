@@ -16,13 +16,19 @@ EntechRobot::EntechRobot()
     , m_compressor(NULL)
     , m_lw(NULL)
     , m_logFP(NULL)
-    , m_joystick(NULL)
-    , m_climbButton(NULL)
-    , m_descendButton(NULL)
-    , m_climbgrabButton(NULL)
-    , m_dropButton(NULL)
-    , m_pickupButton(NULL)
-    , m_autodropButton(NULL)
+    , m_gamepad(NULL)
+    , m_gp_climbButton(NULL)
+    , m_gp_descendButton(NULL)
+    , m_gp_climbgrabButton(NULL)
+    , m_gp_dropButton(NULL)
+    , m_gp_pickupButton(NULL)
+    , m_gp_autodropButton(NULL)
+    , m_buttonpanel(NULL)
+    , m_bp_climbButton(NULL)
+    , m_bp_dropButton(NULL)
+    , m_bp_autodropButton(NULL)
+    , m_bp_shooterOnButton(NULL)
+    , m_bp_fireButton(NULL)
 
     , m_autonomousActive(true)
     , m_autoSelectionD1(NULL)
@@ -91,14 +97,22 @@ void EntechRobot::RobotInit()
         m_compressor->Start();
     }
     
-    m_joystick = new Joystick(c_operatorJSid);
-    if (m_joystick) {
-        m_climbgrabButton = new OperatorButton(m_joystick,c_opclimbgrab_BTNid);
-        m_climbButton = new OperatorButton(m_joystick,c_opclimb_BTNid);
-        m_descendButton = new OperatorButton(m_joystick,c_opdescend_BTNid);
-        m_pickupButton = new OperatorButton(m_joystick,c_oppickup_BTNid);
-        m_autodropButton = new OperatorButton(m_joystick,c_opautodrop_BTNid);
-        m_dropButton = new OperatorButton(m_joystick,c_opdrop_BTNid);
+    m_gamepad = new Joystick(c_operatorGPid);
+    if (m_gamepad) {
+        m_gp_climbgrabButton = new OperatorButton(m_gamepad,c_gpclimbgrab_BTNid);
+        m_gp_climbButton = new OperatorButton(m_gamepad,c_gpclimb_BTNid);
+        m_gp_descendButton = new OperatorButton(m_gamepad,c_gpdescend_BTNid);
+        m_gp_pickupButton = new OperatorButton(m_gamepad,c_gppickup_BTNid);
+        m_gp_autodropButton = new OperatorButton(m_gamepad,c_gpautodrop_BTNid);
+        m_gp_dropButton = new OperatorButton(m_gamepad,c_gpdrop_BTNid);
+    }
+    m_buttonpanel = new Joystick(c_operatorBPid);
+    if (m_buttonpanel) {
+        m_bp_climbButton = new OperatorButton(m_buttonpanel,c_opclimb_BTNid);
+        m_bp_dropButton = new OperatorButton(m_buttonpanel,c_opdrop_BTNid);
+        m_bp_autodropButton = new OperatorButton(m_buttonpanel,c_opautodrop_BTNid);
+        m_bp_shooterOnButton = new OperatorButton(m_buttonpanel,c_opshooterOn_BTNid);
+        m_bp_fireButton = new OperatorButton(m_buttonpanel,c_opfire_BTNid);
     }
 
     m_autoState = kStart;
@@ -225,33 +239,36 @@ void EntechRobot::TeleopInit()
 
 void EntechRobot::TeleopPeriodic()
 {
-    if (m_joystick) {
-        m_climber->Off();
-        if (m_climbButton->GetBool()) {
-            m_climber->Forward();
-        }
-        if (m_descendButton->GetBool()) {
-            m_climber->Backward();
-        }
-        if (m_climbgrabButton->GetBool()) {
-            m_climber->Grab();
-        }
-        if (m_pickup) {
-        	if (m_pickupButton ->GetBool()) {
-        		m_pickup->SetPosition(PickUpSubsystem::kDown);
-        	} else {
-        		m_pickup->SetPosition(PickUpSubsystem::kUp);
-        	}
-        }
-        if (m_autodropButton->GetBool()) {
-            m_dropper->SetMode(DropperSubsystem::kAutomatic);
+    m_climber->Off();
+    if ((m_gp_climbButton && m_gp_climbButton->GetBool()) ||
+        (m_bp_climbButton && m_bp_climbButton->GetBool())    ) {
+        m_climber->Forward();
+    }
+    if (m_gp_descendButton && m_gp_descendButton->GetBool()) {
+        m_climber->Backward();
+    }
+    if (m_gp_climbgrabButton && m_gp_climbgrabButton->GetBool()) {
+        m_climber->Grab();
+    }
+
+    if (m_pickup) {
+      	if (m_gp_pickupButton && m_gp_pickupButton->GetBool()) {
+       		m_pickup->SetPosition(PickUpSubsystem::kDown);
+       	} else {
+       		m_pickup->SetPosition(PickUpSubsystem::kUp);
+       	}
+    }
+
+    if ((m_gp_autodropButton && m_gp_autodropButton->GetBool()) ||
+        (m_bp_autodropButton && m_bp_autodropButton->GetBool())    ) {
+        m_dropper->SetMode(DropperSubsystem::kAutomatic);
+    } else {
+        m_dropper->SetMode(DropperSubsystem::kManual);
+        if ((m_gp_dropButton && m_gp_dropButton->GetBool()) ||
+            (m_bp_dropButton && m_bp_dropButton->GetBool())    ) {
+            m_dropper->SetPosition(DropperSubsystem::kDown);
         } else {
-            m_dropper->SetMode(DropperSubsystem::kManual);
-            if (m_dropButton ->GetBool()) {
-                m_dropper->SetPosition(DropperSubsystem::kDown);
-            } else {
-                m_dropper->SetPosition(DropperSubsystem::kUp);
-            }
+            m_dropper->SetPosition(DropperSubsystem::kUp);
         }
     }
     
@@ -455,9 +472,9 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kClearAirship:
         m_drive->DriveHeading(-90.0,0.8,0.75);
-        m_autoState = WaitForClearAirship;
+        m_autoState = kWaitForClearAirship;
         break;
-    case WaitForClearAirship:
+    case kWaitForClearAirship:
         if (m_drive->Done()) {
             m_autoState = kAlignToTarget;
         }

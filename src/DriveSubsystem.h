@@ -86,7 +86,7 @@ private:
     double m_lateralDecay;
     double m_visionDistance;
 
-    double m_yawWhenTargetLastSeen;
+    double m_yawWhenTargetsLastSeen;
     double m_lateralWhenTargetsLastSeen;
     
     // Simulated JS outputs from PID controllers

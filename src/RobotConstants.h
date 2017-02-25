@@ -5,7 +5,8 @@
 
 // Joystick Ports
 const int c_driverJSid = 0;
-const int c_operatorJSid = 1;
+const int c_operatorBPid = 1;
+const int c_operatorGPid = 2;
 
 // Drive motor ports
 const int c_flmotor_CANid = 1;
@@ -32,13 +33,20 @@ const int c_jsYawToM60_BTNid = 8;
 const int c_jsYawToZero_BTNid = 9;
 const int c_jsHoldYaw_BTNid  = 10;
 
-// Operator Joystick buttons
-const int c_opclimb_BTNid = 1;
-const int c_opautodrop_BTNid = 2;
-const int c_opdescend_BTNid = 3;
-const int c_oppickup_BTNid = 7;
-const int c_opdrop_BTNid = 8;
-const int c_opclimbgrab_BTNid = 4;
+// Operator Gamepad buttons
+const int c_gpclimb_BTNid = 1;
+const int c_gpautodrop_BTNid = 2;
+const int c_gpdescend_BTNid = 3;
+const int c_gppickup_BTNid = 7;
+const int c_gpdrop_BTNid = 8;
+const int c_gpclimbgrab_BTNid = 4;
+
+// Operator Panel buttons
+const int c_opclimb_BTNid = 5;
+const int c_opdrop_BTNid = 7;
+const int c_opautodrop_BTNid = 6;
+const int c_opshooterOn_BTNid = 3;
+const int c_opfire_BTNid = 4;
 
 // Digital Inputs/Outputs
 const int c_dropperSensor = 0;

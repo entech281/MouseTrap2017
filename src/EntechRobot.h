@@ -48,14 +48,21 @@ private:
 
     FILE *m_logFP;
 
-    Joystick  *m_joystick;
-    OperatorButton *m_climbButton;
-    OperatorButton *m_descendButton;
-    OperatorButton *m_climbgrabButton;
-    OperatorButton *m_dropButton;
-    OperatorButton *m_pickupButton;
-    OperatorButton *m_autodropButton;
+    Joystick  *m_gamepad;
+    OperatorButton *m_gp_climbButton;
+    OperatorButton *m_gp_descendButton;
+    OperatorButton *m_gp_climbgrabButton;
+    OperatorButton *m_gp_dropButton;
+    OperatorButton *m_gp_pickupButton;
+    OperatorButton *m_gp_autodropButton;
     
+    Joystick *m_buttonpanel;
+    OperatorButton *m_bp_climbButton;
+    OperatorButton *m_bp_dropButton;
+    OperatorButton *m_bp_autodropButton;
+    OperatorButton *m_bp_shooterOnButton;
+    OperatorButton *m_bp_fireButton;
+
     std::list<RobotSubsystem*> m_robotSubsystems;
 
     bool m_autonomousActive;
