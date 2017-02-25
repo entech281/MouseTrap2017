@@ -71,13 +71,17 @@ private:
                      kDriveBackward, kWaitForDriveBackward,
                      kDriveLateral, kWaitForDriveLateral,
                      kDriveForward, kWaitForDriveForward,
+                     kSetSideShotYaw, kWaitForSetSideShotYaw,
+                     kClearAirship, kWaitForClearAirship,
+                     kAlignToTarget, kWaitForAlignToTarget,
+                     kBackupToWall, kWaitForBackupToWall,
                      kDone };
     AutoState m_autoState;
     enum BoilerDistance { kNear, kMiddle, kFar, kSiderail };
     BoilerDistance m_boilerDistance;
     enum InitialTurn { kRight60, kStraight, kLeft60 };
     InitialTurn m_initialTurn;
-    BoilerDistance m_autoBoilerDistance;
+    bool m_boilerToLeft;
     frc::Timer *m_autoTimer;
 
     Preferences *m_prefs;

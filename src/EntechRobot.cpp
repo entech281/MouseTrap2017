@@ -128,7 +128,6 @@ void EntechRobot::DetermineAutonomousSetup(void)
 {
     bool yaw_left;
     bool yaw_right;
-    bool boiler_to_left;
 
     // jumpered = False, unjumpered = True
     // D1: jumpered = Boiler to robot left
@@ -138,7 +137,7 @@ void EntechRobot::DetermineAutonomousSetup(void)
     // D2 & D3 both jumpered -- no Autonomous
     // D2 & D3 both unjumpered -- straight
 
-    boiler_to_left = m_autoSelectionD1->Get();
+    m_boilerToLeft = m_autoSelectionD1->Get();
     yaw_left = !m_autoSelectionD2->Get();
     yaw_right = !m_autoSelectionD3->Get();
 
@@ -151,18 +150,18 @@ void EntechRobot::DetermineAutonomousSetup(void)
         m_initialTurn = kStraight;
     } else if (yaw_left) {
         m_boilerDistance = kNear;
-        if (boiler_to_left)
+        if (m_boilerToLeft)
             m_boilerDistance = kFar;
         m_initialTurn = kLeft60;
     } else if (yaw_right) {
         m_boilerDistance = kFar;
-        if (boiler_to_left)
+        if (m_boilerToLeft)
             m_boilerDistance = kNear;
         m_initialTurn = kRight60;
     } else {
     	// impossible
     }
-    if (boiler_to_left)
+    if (m_boilerToLeft)
     	m_boilerDistance = kSiderail;
 
     // Set shooter speed based on boiler distance
@@ -291,12 +290,20 @@ void EntechRobot::AutonomousPeriodic()
     switch(m_autoState) {
     case kStart:
         m_autoState = kTurnOnShooter;
-        if (m_boilerDistance == kSiderail) {
-        	m_autoState = kInitialDrive;
+        if (m_boilerToLeft) {
+            if (m_initialTurn == kStraight) {
+                m_drive->SetYawDirection(0.0);
+                m_drive->HoldYaw(true);
+                m_autoState = kDriveToTarget;
+            } else {
+                m_autoState = kInitialDrive;
+            }
         }
         break;
     case kTurnOnShooter:
     	m_shooter->Forward(m_shooterSpeed);
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
         m_autoTimer->Start();
         m_autoState = kWaitForShooterToSpinup;
         break;
@@ -315,6 +322,7 @@ void EntechRobot::AutonomousPeriodic()
             m_shooter->TriggerClose();
             if (m_initialTurn == kStraight) {
                 m_drive->SetYawDirection(0.0);
+                m_drive->HoldYaw(true);
                 m_autoState = kDriveToTarget;
             } else if (m_boilerDistance == kSiderail) {
             	m_autoState = kDone;
@@ -385,10 +393,18 @@ void EntechRobot::AutonomousPeriodic()
                 m_autoState = kDriveForward;
                 break;
             case kRight60:
-                m_autoState = kDone;  // TODO patch in motion to the side rail
+                if (m_boilerToLeft) {
+                    m_autoState = kSetSideShotYaw;
+                } else {
+                    m_autoState = kDriveForward;
+                }
                 break;
             case kStraight:
-                m_autoState = kDriveLateral;
+                if (m_boilerToLeft) {
+                    m_autoState = kSetSideShotYaw;
+                } else {
+                    m_autoState = kDriveLateral;
+                }
                 break;
             }                
         }
@@ -421,6 +437,50 @@ void EntechRobot::AutonomousPeriodic()
     case kWaitForDriveForward:
         if (m_drive->Done()) {
             m_autoState = kDone;
+        }
+        break;
+    case kSetSideShotYaw:
+        m_drive->SetYawDirection(90.0);
+        m_drive->HoldYaw(true);
+        m_autoState = kWaitForSetSideShotYaw;
+        break;
+    case kWaitForSetSideShotYaw:
+        if (m_drive->IsYawCorrect()) {
+            if (m_initialTurn == kStraight) {
+                m_autoState = kClearAirship;
+            } else {
+                m_autoState = kAlignToTarget;
+            }
+        }
+        break;
+    case kClearAirship:
+        m_drive->DriveHeading(-90.0,0.8,0.75);
+        m_autoState = WaitForClearAirship;
+        break;
+    case WaitForClearAirship:
+        if (m_drive->Done()) {
+            m_autoState = kAlignToTarget;
+        }
+        break;
+    case kAlignToTarget:
+        m_drive->AlignWithTargetFacing(90.0);
+        m_autoState = kWaitForAlignToTarget;
+        break;
+    case kWaitForAlignToTarget:
+        if (m_drive->IsAlignmentCorrect()) {
+            m_autoState = kBackupToWall;
+        }
+        break;
+    case kBackupToWall:
+        m_drive->DriveToVisionTarget(0.2,false);
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
+        m_autoTimer->Start();
+        m_autoState = kWaitForBackupToWall;
+        break;
+    case kWaitForBackupToWall:
+        if (m_autoTimer->Get() > 1.0) {
+            m_autoState = kTurnOnShooter;
         }
         break;
     case kDone:
