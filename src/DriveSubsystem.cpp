@@ -391,9 +391,11 @@ void DriveSubsystem::TeleopPeriodic()
         SetYawDirection(-60.0);
     	HoldYaw(true);
     }
+#if NAVX
     if (m_resetYawToZeroButton->Get() == OperatorButton::kJustPressed) {
         m_ahrs->ZeroYaw();
     }
+#endif
 #endif
     if (m_climbModeButton->GetBool()) {
 #if NAVX || IMU_MXP
