@@ -246,18 +246,20 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
     m_currMode = kDeadRecon;
 }
 
-void DriveSubsystem::DriveToVisionTarget(double speed)
+void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
 {
 #if NAVX || IMU_MXP
-    double yaw = GetRobotYaw();
-    if (yaw < -30.0) {
-        SetYawDirection(-60.0);
-    } else if (yaw > 30.0) {
-        SetYawDirection(60.0);
-    } else {
-        SetYawDirection(0.0);
+    if (auto_yaw) {
+        double yaw = GetRobotYaw();
+        if (yaw < -30.0) {
+            SetYawDirection(-60.0);
+        } else if (yaw > 30.0) {
+            SetYawDirection(60.0);
+        } else {
+            SetYawDirection(0.0);
+        }
+        HoldYaw(true);
     }
-    HoldYaw(true);
 #endif
 
     m_lateralController->SetSetpoint(0.0);
@@ -270,8 +272,6 @@ void DriveSubsystem::DriveToVisionTarget(double speed)
 }
 void DriveSubsystem::AlignWithTargetFacing(double yaw_angle)
 {
-    // TODO figure out
-    // If see target, remember initial yaw so know which lateral direction to go if lose target
     SetYawDirection(yaw_angle);
     HoldYaw(true);
 
@@ -344,19 +344,42 @@ void DriveSubsystem::GetVisionData()
     m_rpi_seq = m_ntTable->GetNumber(RPI_SEQUENCE,m_rpi_lastseq);
     if (m_rpi_seq != m_rpi_lastseq) {
         m_missingRPiCount = 0;
-        // Q: if vision sees targets go out of picture, does it return lateral "guess"
-        //    based on which side of the picture it last saw the targets? (e.g. -150.0)
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
         m_lateralDecay = m_visionLateral/20.0;
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
-        if (m_visionDistance < c_minVisionDistance) {
+        if (m_targetsBelowMinDistance || (m_visionDistance < c_minVisionDistance)) {
             m_targetsBelowMinDistance = true;
-        }
+	    m_lateralController->Disable();
+	    m_lateralJS = 0.0;
+        } else {
+	    if (m_visionTargetsFound) {
+	        m_yawWhenTargetsLastSeen = GetRobotYaw();
+                m_lateralWhenTargetsLastSeen = m_visionLateral;
+	        m_lateralController->SetSetpoint(0.0);
+	        m_lateralController->Enable();
+	    } else {
+	        m_lateralController->Disable();
+                double deltaYaw = m_yawWhenTargetLastSeen - GetRobotYaw();
+                // Yaw checks get priority over lateral positions for deciding which way the targets went
+	        if (deltaYaw < -5.0) {
+                    m_lateralJS = -0.1;
+                } else if (deltaYaw > 5.0) {
+                    m_lateralJS = 0.1;
+                } else if (m_lateralWhenTargetsLastSeen < 0.0) {
+                    m_lateralJS = -0.1;
+                } else if (m_lateralWhenTargetsLastSeen > 0.0) {
+                    m_lateralJS = 0.1;
+                } else {
+                    m_lateralJS = 0.0;
+                }
+	    }
+	}
     } else {
         ++m_missingRPiCount;
         m_visionLateral -= m_lateralDecay;
     }
+
     m_rpi_lastseq = m_rpi_seq;
 }
 
