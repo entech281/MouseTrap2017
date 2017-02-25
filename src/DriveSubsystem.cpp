@@ -22,6 +22,7 @@
 const int c_countUntilIgnoreRPi = 60;
 const double c_minVisionDistance = 30.;
 const double c_yawTolerance = 3.0;
+const double c_lateralTolerence = 5.0;
 
 #if NAVX || IMU_MXP
 const static double kYaw_P = 0.03;
@@ -333,6 +334,14 @@ bool DriveSubsystem::IsYawCorrect(void)
 #else
     return true;
 #endif
+}
+
+bool DriveSubsystem::IsAlignmentCorrect(void)
+{
+    if (IsYawCorrect() && m_visionTargetFound && (fabs(m_visionLateral) < c_lateralTolerence)) {
+        return true;
+    }
+    return false;
 }
 
 /********************************** Periodic Routines **********************************/

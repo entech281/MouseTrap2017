@@ -35,6 +35,7 @@ public:
     void HoldYaw(bool active);
     void SetYawDirection(double angle);
     bool IsYawCorrect(void);
+    bool IsAlignmentCorrect(void);
 
     /********************************** Subsystem Routines **********************************/
     virtual void RobotInit();
