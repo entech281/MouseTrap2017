@@ -3,7 +3,7 @@
 #include "EntechRobot.h"
 #include "RobotConstants.h"
 
-#define LOG_FILE "EntechRobotLog.csv"
+#define LOG_FILE "/tmp/EntechRobotLog.csv"
 
 // Sample do nothing change
 
@@ -81,7 +81,7 @@ void EntechRobot::CloseLog(void)
 void EntechRobot::RobotInit()
 {
     NetworkTable::SetServerMode();
-    NetworkTable::SetUpdateRate(0.050);
+    NetworkTable::SetUpdateRate(0.02);
     m_lw = frc::LiveWindow::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
@@ -390,12 +390,14 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget(-0.15);
+        m_drive->DriveToVisionTarget(-0.22);
         m_autoState = kWaitForDriveToTarget;
         break;
     case kWaitForDriveToTarget:
-        if (m_dropper->IsGearDropped()) {
+        if (m_dropper->IsPinSensed()) {
             m_drive->DriveHeading(0.0,0.0,0.0);
+        }
+        if (m_dropper->IsGearDropped()) {
             m_autoState = kDriveBackward;
         }
         break;
@@ -408,7 +410,7 @@ void EntechRobot::AutonomousPeriodic()
             m_drive->DriveHeading(-120.0, 0.45, 0.75);
             break;
         case kStraight:
-            m_drive->DriveHeading(180.0, 0.30, 1.8);
+            m_drive->DriveHeading(180.0, 0.40, 1.5);
             break;
         }
         m_autoState = kWaitForDriveBackward;
@@ -416,6 +418,8 @@ void EntechRobot::AutonomousPeriodic()
     case kWaitForDriveBackward:
         if (m_drive->Done()) {
             m_drive->DriveHeading(0.0,0.0,0.0);
+            m_dropper->SetMode(DropperSubsystem::kManual);
+            m_dropper->SetPosition(DropperSubsystem::kUp);
             // skip lateral drive for initial turn cases
             switch (m_initialTurn) {
             case kLeft60:
@@ -449,8 +453,6 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kDriveForward:
-        m_dropper->SetMode(DropperSubsystem::kManual);
-        m_dropper->SetPosition(DropperSubsystem::kUp);
         m_drive->SetYawDirection(0.0);
         switch (m_initialTurn) {
         case kLeft60:
@@ -469,21 +471,21 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kSetSideShotYaw:
+        m_dropper->SetMode(DropperSubsystem::kManual);
+        m_dropper->SetPosition(DropperSubsystem::kUp);
         m_drive->SetYawDirection(90.0);
         m_drive->HoldYaw(true);
         m_autoState = kWaitForSetSideShotYaw;
         break;
     case kWaitForSetSideShotYaw:
-        if (m_drive->IsYawCorrect()) {
-            if (m_initialTurn == kStraight) {
-                m_autoState = kClearAirship;
-            } else {
-                m_autoState = kAlignToTarget;
-            }
+        if (m_initialTurn == kStraight) {
+            m_autoState = kClearAirship;
+        } else {
+            m_autoState = kAlignToTarget;
         }
         break;
     case kClearAirship:
-        m_drive->DriveHeading(-90.0,0.8,0.75);
+        m_drive->DriveHeading(-90.0,0.8,1.75);
         m_autoState = kWaitForClearAirship;
         break;
     case kWaitForClearAirship:

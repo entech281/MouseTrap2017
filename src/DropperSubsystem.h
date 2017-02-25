@@ -30,10 +30,9 @@ public:
     void SetPosition(DropperPosition position);
     void SetMode(DropperMode mode);
     bool IsGearDropped();
+    bool IsPinSensed(void);
 
 private:
-    bool IsPinSensed(void);
-    
     Solenoid* m_dropperSolenoid1;
     Solenoid* m_dropperSolenoid2;
     DigitalInput *m_limitSwitch;
@@ -42,6 +41,7 @@ private:
     DropperMode m_mode;
     bool m_autoTriggered;
     int m_pinSensedCounter;
+    double m_triggerTime;
 };
 
 #endif

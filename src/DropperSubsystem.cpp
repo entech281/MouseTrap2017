@@ -1,4 +1,5 @@
 #include <WPILib.h>
+#include <math.h>
 
 #include "DropperSubsystem.h"
 #include "RobotConstants.h"
@@ -15,6 +16,7 @@ DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
     , m_mode(kManual)
     , m_autoTriggered(false)
     , m_pinSensedCounter(0)
+    , m_triggerTime(0.0)
 {
 
 }
@@ -32,12 +34,16 @@ void DropperSubsystem::RobotInit()
 
 void DropperSubsystem::AutonomousInit()
 {
-
+    m_timer->Stop();
+    m_timer->Reset();
+    m_timer->Start();
 }
 
 void DropperSubsystem::TeleopInit()
 {
-
+    m_timer->Stop();
+    m_timer->Reset();
+    m_timer->Start();
 }
 
 void DropperSubsystem::DisabledInit()
@@ -58,6 +64,13 @@ void DropperSubsystem::UpdateDashboard()
     } else {
         SmartDashboard::PutString("Gear Drop Position", "Up");
     }
+    if (m_mode == kManual) {
+        SmartDashboard::PutString("Gear Drop Mode", "Manual");
+    } else {
+        SmartDashboard::PutString("Gear Drop Mode", "Automatic");
+    }
+    SmartDashboard::PutBoolean("Gear Drop Auto Triggered",m_autoTriggered);
+    SmartDashboard::PutNumber("Gear Drop Timer", m_timer->Get());
 }
 
 void DropperSubsystem::LogHeader(FILE *fp)
@@ -81,8 +94,8 @@ void DropperSubsystem::AutonomousPeriodic()
 void DropperSubsystem::TeleopPeriodic()
 {
     if (m_mode == kManual) {
-        if (m_position == kDown)
-        {
+        m_autoTriggered = false;
+        if (m_position == kDown) {
             m_dropperSolenoid1->Set(false);
             m_dropperSolenoid2->Set(true);
         } else {
@@ -96,18 +109,18 @@ void DropperSubsystem::TeleopPeriodic()
             // make the counter detect consecutive presses
             m_pinSensedCounter = 0;
         }
-        if (m_pinSensedCounter > c_pinSensesUntilDrop) {
+        if ((!m_autoTriggered) && (m_pinSensedCounter > c_pinSensesUntilDrop)) {
             m_autoTriggered = true;
-            m_timer->Stop();
-            m_timer->Reset();
-            m_timer->Start();
+            m_triggerTime = m_timer->Get();
         }
         if (m_autoTriggered) {
             m_dropperSolenoid1->Set(false);
             m_dropperSolenoid2->Set(true);
+            m_position = kDown;
         } else {
             m_dropperSolenoid1->Set(true);
             m_dropperSolenoid2->Set(false);
+            m_position = kUp;
         }
     }
 }
@@ -124,12 +137,8 @@ void DropperSubsystem::TestPeriodic()
 void DropperSubsystem::SetMode(DropperMode mode)
 {
     m_mode = mode;
-    if (m_mode == kManual) {
-        m_timer->Stop();
-        m_timer->Reset();
-        m_pinSensedCounter = 0;
-        m_autoTriggered = false;
-    }
+    m_pinSensedCounter = 0;
+    m_autoTriggered = false;
 }
 
 void DropperSubsystem::SetPosition(DropperPosition position)
@@ -139,8 +148,12 @@ void DropperSubsystem::SetPosition(DropperPosition position)
 
 bool DropperSubsystem::IsGearDropped()
 {
-    if (m_autoTriggered && (m_timer->Get() > 0.05))
+    if ((m_mode == kAutomatic) && m_autoTriggered && (fabs(m_triggerTime - m_timer->Get()) > 0.05)) {
         return true;
+    }
+    if ((m_mode == kManual) && (m_position == kDown)) {
+        return true;
+    }
     return false;
 }
 

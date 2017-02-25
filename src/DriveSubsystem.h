@@ -52,7 +52,7 @@ public:
     virtual void LogData(FILE *fp);
 
 private:
-    enum DriveMode { kManual, kAutomatic, kDeadRecon, kClimb };
+    enum DriveMode { kManual, kAutomatic, kDeadRecon };
     void SetMode(DriveMode mode);
     void GetVisionData(void);
     void DriveAutomatic(void);
@@ -85,6 +85,7 @@ private:
     double m_visionLateral;
     double m_lateralDecay;
     double m_visionDistance;
+    bool   m_inAutonomous;
 
     double m_yawWhenTargetsLastSeen;
     double m_lateralWhenTargetsLastSeen;
@@ -116,6 +117,5 @@ private:
     OperatorButton *m_yawToM60Button;
     OperatorButton *m_resetYawToZeroButton;
     OperatorButton *m_autoDriveButton;
-    OperatorButton *m_climbModeButton;
 };
 #endif
