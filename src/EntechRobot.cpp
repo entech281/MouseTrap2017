@@ -81,7 +81,9 @@ void EntechRobot::RobotInit()
     m_climber = new ClimberSubsystem(this, "climber");
     m_shooter = new ShooterSubsystem(this, "shooter");
     m_dropper = new DropperSubsystem(this, "dropper");
+#if PICKUP
     m_pickup = new PickUpSubsystem(this, "pickup");
+#endif
 
     m_compressor = new frc::Compressor(c_compressorPCMid);
     if (m_compressor) {
@@ -126,7 +128,6 @@ void EntechRobot::DetermineAutonomousSetup(void)
 {
     bool yaw_left;
     bool yaw_right;
-    bool boiler_to_left;
 
     // jumpered = False, unjumpered = True
     // D1: jumpered = Boiler to robot left
@@ -136,7 +137,7 @@ void EntechRobot::DetermineAutonomousSetup(void)
     // D2 & D3 both jumpered -- no Autonomous
     // D2 & D3 both unjumpered -- straight
 
-    boiler_to_left = m_autoSelectionD1->Get();
+    m_boilerToLeft = m_autoSelectionD1->Get();
     yaw_left = !m_autoSelectionD2->Get();
     yaw_right = !m_autoSelectionD3->Get();
 
@@ -149,29 +150,34 @@ void EntechRobot::DetermineAutonomousSetup(void)
         m_initialTurn = kStraight;
     } else if (yaw_left) {
         m_boilerDistance = kNear;
-        if (boiler_to_left)
+        if (m_boilerToLeft)
             m_boilerDistance = kFar;
         m_initialTurn = kLeft60;
     } else if (yaw_right) {
         m_boilerDistance = kFar;
-        if (boiler_to_left)
+        if (m_boilerToLeft)
             m_boilerDistance = kNear;
         m_initialTurn = kRight60;
     } else {
     	// impossible
     }
+    if (m_boilerToLeft)
+    	m_boilerDistance = kSiderail;
 
     // Set shooter speed based on boiler distance
     m_shooterSpeed = 0.0;
     switch (m_boilerDistance) {
     case kNear:
-        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.75);
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.7);
         break;
     case kMiddle:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", -0.9);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", -0.8);
         break;
     case kFar:
-        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -1.0);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -0.9);
+        break;
+    case kSiderail:
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", -0.6);
         break;
     }
 }
@@ -230,10 +236,12 @@ void EntechRobot::TeleopPeriodic()
         if (m_climbgrabButton->GetBool()) {
             m_climber->Grab();
         }
-        if (m_pickupButton ->GetBool()) {
-            m_pickup->SetPosition(PickUpSubsystem::kDown);
-        }else{
-            m_pickup->SetPosition(PickUpSubsystem::kUp);
+        if (m_pickup) {
+        	if (m_pickupButton ->GetBool()) {
+        		m_pickup->SetPosition(PickUpSubsystem::kDown);
+        	} else {
+        		m_pickup->SetPosition(PickUpSubsystem::kUp);
+        	}
         }
         if (m_autodropButton->GetBool()) {
             m_dropper->SetMode(DropperSubsystem::kAutomatic);
@@ -282,9 +290,20 @@ void EntechRobot::AutonomousPeriodic()
     switch(m_autoState) {
     case kStart:
         m_autoState = kTurnOnShooter;
+        if (m_boilerToLeft) {
+            if (m_initialTurn == kStraight) {
+                m_drive->SetYawDirection(0.0);
+                m_drive->HoldYaw(true);
+                m_autoState = kDriveToTarget;
+            } else {
+                m_autoState = kInitialDrive;
+            }
+        }
         break;
     case kTurnOnShooter:
     	m_shooter->Forward(m_shooterSpeed);
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
         m_autoTimer->Start();
         m_autoState = kWaitForShooterToSpinup;
         break;
@@ -294,15 +313,19 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kShootFuelLoad:
-        m_shooter->ShootAll();
+        m_shooter->TriggerOpen();
         m_autoState = kWaitForShootFuelLoad;
         break;
     case kWaitForShootFuelLoad:
         if (m_autoTimer->Get() > 2.5) {
-            m_shooter->Off();
+            m_shooter->Forward(0.0);
+            m_shooter->TriggerClose();
             if (m_initialTurn == kStraight) {
                 m_drive->SetYawDirection(0.0);
+                m_drive->HoldYaw(true);
                 m_autoState = kDriveToTarget;
+            } else if (m_boilerDistance == kSiderail) {
+            	m_autoState = kDone;
             } else {
                 m_autoState = kInitialDrive;
             }
@@ -367,11 +390,21 @@ void EntechRobot::AutonomousPeriodic()
             // skip lateral drive for initial turn cases
             switch (m_initialTurn) {
             case kLeft60:
-            case kRight60:
                 m_autoState = kDriveForward;
                 break;
+            case kRight60:
+                if (m_boilerToLeft) {
+                    m_autoState = kSetSideShotYaw;
+                } else {
+                    m_autoState = kDriveForward;
+                }
+                break;
             case kStraight:
-                m_autoState = kDriveLateral;
+                if (m_boilerToLeft) {
+                    m_autoState = kSetSideShotYaw;
+                } else {
+                    m_autoState = kDriveLateral;
+                }
                 break;
             }                
         }
@@ -404,6 +437,50 @@ void EntechRobot::AutonomousPeriodic()
     case kWaitForDriveForward:
         if (m_drive->Done()) {
             m_autoState = kDone;
+        }
+        break;
+    case kSetSideShotYaw:
+        m_drive->SetYawDirection(90.0);
+        m_drive->HoldYaw(true);
+        m_autoState = kWaitForSetSideShotYaw;
+        break;
+    case kWaitForSetSideShotYaw:
+        if (m_drive->IsYawCorrect()) {
+            if (m_initialTurn == kStraight) {
+                m_autoState = kClearAirship;
+            } else {
+                m_autoState = kAlignToTarget;
+            }
+        }
+        break;
+    case kClearAirship:
+        m_drive->DriveHeading(-90.0,0.8,0.75);
+        m_autoState = WaitForClearAirship;
+        break;
+    case WaitForClearAirship:
+        if (m_drive->Done()) {
+            m_autoState = kAlignToTarget;
+        }
+        break;
+    case kAlignToTarget:
+        m_drive->AlignWithTargetFacing(90.0);
+        m_autoState = kWaitForAlignToTarget;
+        break;
+    case kWaitForAlignToTarget:
+        if (m_drive->IsAlignmentCorrect()) {
+            m_autoState = kBackupToWall;
+        }
+        break;
+    case kBackupToWall:
+        m_drive->DriveToVisionTarget(0.2,false);
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
+        m_autoTimer->Start();
+        m_autoState = kWaitForBackupToWall;
+        break;
+    case kWaitForBackupToWall:
+        if (m_autoTimer->Get() > 1.0) {
+            m_autoState = kTurnOnShooter;
         }
         break;
     case kDone:
@@ -457,6 +534,9 @@ void EntechRobot::UpdateDashboard()
         break;
     case kFar:
         SmartDashboard::PutString("Boiler Distance", "Far");
+        break;
+    case kSiderail:
+        SmartDashboard::PutString("Boiler Distance", "Siderail");
         break;
     }
     SmartDashboard::PutNumber("Shooter Speed",m_shooterSpeed);

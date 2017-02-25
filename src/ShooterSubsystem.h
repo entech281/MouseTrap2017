@@ -13,10 +13,9 @@ public:
     ShooterSubsystem(EntechRobot *pRobot, std::string name = "Shooter");
     virtual ~ShooterSubsystem();
 
-
-    void Off(void);
     void Forward(double speed = -1.0);
-    void ShootAll(void);
+    void TriggerOpen(void);
+    void TriggerClose(void);
 
     virtual void UpdateDashboard(void);
 
@@ -32,6 +31,10 @@ public:
 
 private:
     CANTalon* m_ShooterMotor;
+    Solenoid* m_solenoid1;
+    Solenoid* m_solenoid2;
+    frc::Timer m_timer;
+    bool m_shoot;
     double m_speed;
 };
 #endif

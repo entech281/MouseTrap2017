@@ -27,13 +27,15 @@ public:
     virtual ~DriveSubsystem();
 
     void DriveHeading(double angle, double speed, double time);
-    void DriveToVisionTarget(double speed = 1.0);
+    void DriveToVisionTarget(double speed = 10.0, bool auto_yaw = true);
+    void AlignWithTargetFacing(double yaw_angle);
     void AbortDriveToVisionTarget(void);
     bool Done(void);
     void FieldAbsoluteDriving(bool active);
     void HoldYaw(bool active);
     void SetYawDirection(double angle);
     bool IsYawCorrect(void);
+    bool IsAlignmentCorrect(void);
 
     /********************************** Subsystem Routines **********************************/
     virtual void RobotInit();
@@ -83,6 +85,10 @@ private:
     double m_visionLateral;
     double m_lateralDecay;
     double m_visionDistance;
+
+    double m_yawWhenTargetLastSeen;
+    double m_lateralWhenTargetsLastSeen;
+    
     // Simulated JS outputs from PID controllers
     double m_yawJStwist;
     double m_lateralJS;
