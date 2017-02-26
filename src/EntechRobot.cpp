@@ -390,7 +390,7 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget(-0.22);
+        m_drive->DriveToVisionTarget(-0.25);
         m_autoState = kWaitForDriveToTarget;
         break;
     case kWaitForDriveToTarget:
@@ -494,7 +494,7 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kAlignToTarget:
-        m_drive->AlignWithTargetFacing(90.0);
+        m_drive->AlignWithTargetFacing(90.0,-0.3);
         m_autoState = kWaitForAlignToTarget;
         break;
     case kWaitForAlignToTarget:
@@ -510,12 +510,11 @@ void EntechRobot::AutonomousPeriodic()
         m_autoState = kWaitForBackupToWall;
         break;
     case kWaitForBackupToWall:
-        if (m_autoTimer->Get() > 1.0) {
+        if ((m_autoTimer->Get() > 0.5) && m_drive->Stopped()) {
             m_autoState = kTurnOnShooter;
         }
         break;
     case kDone:
-        break;
     default:
         break;
     }

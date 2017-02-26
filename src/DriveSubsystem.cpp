@@ -23,6 +23,7 @@ const int c_countUntilIgnoreRPi = 60;
 const double c_minVisionDistance = 30.;
 const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
+const double c_velocityTolerance = 0.001;
 
 #if NAVX || IMU_MXP
 const static double kYaw_P = 0.03;
@@ -66,6 +67,8 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_visionLateral(0.0)
     , m_lateralDecay(0.0)
     , m_visionDistance(100.0)
+    , m_straffeSpeed(0.0)
+    , m_allowStraffe(false)
     , m_inAutonomous(false)
     , m_yawJStwist(0.0)
     , m_lateralJS(0.0)
@@ -246,11 +249,11 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
     m_dir = angle*M_PI/180.0;
     m_speed = speed;
     m_time = time;
-    m_currMode = kDeadRecon;
     m_timer->Stop();
     m_timer->Reset();
     m_timer->Start();
     m_currMode = kDeadRecon;
+    m_allowStraffe = false;
 }
 
 void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
@@ -275,13 +278,16 @@ void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
     // m_distanceController->SetSetpoint(0.0);
     // m_distanceController->Enable();
 
+    m_allowStraffe = false;
     m_currMode = kAutomatic;
 }
-void DriveSubsystem::AlignWithTargetFacing(double yaw_angle)
+void DriveSubsystem::AlignWithTargetFacing(double yaw_angle, double lateral_speed)
 {
     SetYawDirection(yaw_angle);
     HoldYaw(true);
 
+    m_straffeSpeed = lateral_speed;
+    m_allowStraffe = true;
     m_currMode = kAutomatic;
 }
 
@@ -294,6 +300,7 @@ void DriveSubsystem::AbortDriveToVisionTarget(void)
     m_lateralController->Disable();
     // m_distanceController->Disable();
     m_currMode = kManual;
+    m_straffeSpeed = 0.0;
     m_targetsBelowMinDistance = false;
 }
 
@@ -302,6 +309,19 @@ bool DriveSubsystem::Done(void)
     if (m_currMode == kManual)
         return true;
     return false;
+}
+
+bool DriveSubsystem::Stopped(void)
+{
+#if NAVX
+    if (m_ahrs) {
+        if (fabs(m_ahrs->GetVelocityX()) < c_velocityTolerance) {
+            return true;
+        }
+        return false;
+    }
+#endif
+    return true;
 }
 
 void DriveSubsystem::FieldAbsoluteDriving(bool active)
@@ -372,24 +392,28 @@ void DriveSubsystem::GetVisionData()
             m_lateralJS = 0.0;
         } else {
             if (m_visionTargetsFound) {
-	            m_yawWhenTargetsLastSeen = GetRobotYaw();
+                m_yawWhenTargetsLastSeen = GetRobotYaw();
                 m_lateralWhenTargetsLastSeen = m_visionLateral;
                 m_lateralController->SetSetpoint(0.0);
                 m_lateralController->Enable();
-	        } else {
-	            m_lateralController->Disable();
-                double deltaYaw = m_yawWhenTargetsLastSeen - GetRobotYaw();
-                // Yaw checks get priority over lateral positions for deciding which way the targets went
-                if (deltaYaw < -5.0) {
-                    m_lateralJS = -0.15;
-                } else if (deltaYaw > 5.0) {
-                    m_lateralJS = 0.15;
-                } else if (m_lateralWhenTargetsLastSeen < 0.0) {
-                    m_lateralJS = -0.15;
-                } else if (m_lateralWhenTargetsLastSeen > 0.0) {
-                    m_lateralJS = 0.15;
+            } else {
+                if (m_allowStraffe) {
+                    m_lateralJS = m_straffeSpeed;
                 } else {
-                    m_lateralJS = 0.0;
+                    m_lateralController->Disable();
+                    double deltaYaw = m_yawWhenTargetsLastSeen - GetRobotYaw();
+                    // Yaw checks get priority over lateral positions for deciding which way the targets went
+                    if (deltaYaw < -5.0) {
+                        m_lateralJS = -0.15;
+                    } else if (deltaYaw > 5.0) {
+                        m_lateralJS = 0.15;
+                    } else if (m_lateralWhenTargetsLastSeen < 0.0) {
+                        m_lateralJS = -0.15;
+                    } else if (m_lateralWhenTargetsLastSeen > 0.0) {
+                        m_lateralJS = 0.15;
+                    } else {
+                        m_lateralJS = 0.0;
+                    }
                 }
 	    }
 	}
@@ -486,10 +510,12 @@ void DriveSubsystem::AutonomousPeriodic()
         if (m_timer->Get() < m_time) {
             DriveDeadRecon();
         } else {
+            m_allowStraffe = false;
             m_currMode = kManual;
         }
         break;
     case kManual:
+        m_allowStraffe = false;
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
         break;
     case kAutomatic:

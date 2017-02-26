@@ -28,7 +28,7 @@ public:
 
     void DriveHeading(double angle, double speed, double time);
     void DriveToVisionTarget(double speed = 10.0, bool auto_yaw = true);
-    void AlignWithTargetFacing(double yaw_angle);
+    void AlignWithTargetFacing(double yaw_angle, double lateral_speed);
     void AbortDriveToVisionTarget(void);
     bool Done(void);
     void FieldAbsoluteDriving(bool active);
@@ -85,6 +85,7 @@ private:
     double m_visionLateral;
     double m_lateralDecay;
     double m_visionDistance;
+    double m_straffeSpeed;
     bool   m_inAutonomous;
 
     double m_yawWhenTargetsLastSeen;
