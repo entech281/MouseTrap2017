@@ -182,16 +182,16 @@ void EntechRobot::DetermineAutonomousSetup(void)
     m_shooterSpeed = 0.0;
     switch (m_boilerDistance) {
     case kNear:
-        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", -0.7);
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", 1500.0);
         break;
     case kMiddle:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", -0.8);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", 3270.0);
         break;
     case kFar:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", -0.9);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", 4200.0);
         break;
     case kSiderail:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", -0.6);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", 2800.0);
         break;
     }
 }
@@ -273,7 +273,7 @@ void EntechRobot::TeleopPeriodic()
     }
     
     if (m_bp_shooterOnButton && m_bp_shooterOnButton->GetBool()) {
-        m_shooter->Forward(m_buttonpanel->GetX());
+        m_shooter->Forward(0.5*(1.0-m_buttonpanel->GetX()));
         if (m_bp_fireButton && m_bp_fireButton->GetBool()) {
             m_shooter->TriggerOpen();
         } else {
@@ -330,23 +330,23 @@ void EntechRobot::AutonomousPeriodic()
         }
         break;
     case kTurnOnShooter:
-    	m_shooter->Forward(m_shooterSpeed);
-        m_autoTimer->Stop();
-        m_autoTimer->Reset();
-        m_autoTimer->Start();
+    	m_shooter->SetRPM(m_shooterSpeed);
         m_autoState = kWaitForShooterToSpinup;
         break;
     case kWaitForShooterToSpinup:
-        if (m_autoTimer->Get() > 0.5) {
+        if (m_shooter->IsAtTargetRPM()) {
             m_autoState = kShootFuelLoad;
         }
         break;
     case kShootFuelLoad:
         m_shooter->TriggerOpen();
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
+        m_autoTimer->Start();
         m_autoState = kWaitForShootFuelLoad;
         break;
     case kWaitForShootFuelLoad:
-        if (m_autoTimer->Get() > 2.5) {
+        if (m_autoTimer->Get() > 4.5) {
             m_shooter->Forward(0.0);
             m_shooter->TriggerClose();
             if (m_initialTurn == kStraight) {

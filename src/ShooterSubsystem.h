@@ -13,7 +13,9 @@ public:
     ShooterSubsystem(EntechRobot *pRobot, std::string name = "Shooter");
     virtual ~ShooterSubsystem();
 
-    void Forward(double speed = -1.0);
+    void Forward(double speed = 1.0);
+    void SetRPM(double rpm);
+    bool IsAtTargetRPM(void);
     void TriggerOpen(void);
     void TriggerClose(void);
 
@@ -34,7 +36,11 @@ private:
     Solenoid* m_solenoid1;
     Solenoid* m_solenoid2;
     frc::Timer m_timer;
+    enum ShooterMode { kRPM, kVbus };
+    ShooterMode m_mode;
     bool m_shoot;
     double m_speed;
+    double m_rpm;
+    bool m_pidActive;
 };
 #endif

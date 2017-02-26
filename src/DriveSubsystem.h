@@ -36,6 +36,7 @@ public:
     void SetYawDirection(double angle);
     bool IsYawCorrect(void);
     bool IsAlignmentCorrect(void);
+    bool Stopped(void);
 
     /********************************** Subsystem Routines **********************************/
     virtual void RobotInit();
@@ -86,6 +87,7 @@ private:
     double m_lateralDecay;
     double m_visionDistance;
     double m_straffeSpeed;
+    bool   m_allowStraffe;
     bool   m_inAutonomous;
 
     double m_yawWhenTargetsLastSeen;
