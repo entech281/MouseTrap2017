@@ -15,9 +15,8 @@ public:
 
 
     void Off(void);
-    void Forward(void);
+    void Climb(void);
     void Backward(void);
-    void Grab(void);
 
     virtual void UpdateDashboard(void);
 
@@ -34,6 +33,5 @@ public:
 private:
     CANTalon* m_climberMotor;
     double m_speed;
-    Timer* m_timer;
 };
 #endif

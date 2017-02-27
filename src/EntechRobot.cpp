@@ -239,16 +239,13 @@ void EntechRobot::TeleopInit()
 
 void EntechRobot::TeleopPeriodic()
 {
-    m_climber->Off();
     if ((m_gp_climbButton && m_gp_climbButton->GetBool()) ||
         (m_bp_climbButton && m_bp_climbButton->GetBool())    ) {
-        m_climber->Forward();
-    }
-    if (m_gp_descendButton && m_gp_descendButton->GetBool()) {
+        m_climber->Climb();
+    } else if (m_gp_descendButton && m_gp_descendButton->GetBool()) {
         m_climber->Backward();
-    }
-    if (m_gp_climbgrabButton && m_gp_climbgrabButton->GetBool()) {
-        m_climber->Grab();
+    } else {
+        m_climber->Off();
     }
 
     if (m_pickup) {
