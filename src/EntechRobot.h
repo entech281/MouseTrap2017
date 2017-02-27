@@ -49,9 +49,9 @@ private:
     FILE *m_logFP;
 
     Joystick  *m_gamepad;
+	OperatorButton *m_gp_useShooterPID;
     OperatorButton *m_gp_climbButton;
     OperatorButton *m_gp_descendButton;
-    OperatorButton *m_gp_climbgrabButton;
     OperatorButton *m_gp_dropButton;
     OperatorButton *m_gp_pickupButton;
     OperatorButton *m_gp_autodropButton;

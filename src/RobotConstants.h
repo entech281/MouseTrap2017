@@ -39,7 +39,6 @@ const int c_gpautodrop_BTNid = 2;
 const int c_gpdescend_BTNid = 3;
 const int c_gppickup_BTNid = 7;
 const int c_gpdrop_BTNid = 8;
-const int c_gpclimbgrab_BTNid = 4;
 
 // Operator Panel buttons
 const int c_opclimb_BTNid = 5;

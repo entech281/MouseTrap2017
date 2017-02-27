@@ -17,9 +17,9 @@ EntechRobot::EntechRobot()
     , m_lw(NULL)
     , m_logFP(NULL)
     , m_gamepad(NULL)
+    , m_gp_useShooterPID(NULL)
     , m_gp_climbButton(NULL)
     , m_gp_descendButton(NULL)
-    , m_gp_climbgrabButton(NULL)
     , m_gp_dropButton(NULL)
     , m_gp_pickupButton(NULL)
     , m_gp_autodropButton(NULL)
@@ -99,7 +99,7 @@ void EntechRobot::RobotInit()
     
     m_gamepad = new Joystick(c_operatorGPid);
     if (m_gamepad) {
-        m_gp_climbgrabButton = new OperatorButton(m_gamepad,c_gpclimbgrab_BTNid);
+    	m_gp_useShooterPID = new OperatorButton(m_gamepad,4);
         m_gp_climbButton = new OperatorButton(m_gamepad,c_gpclimb_BTNid);
         m_gp_descendButton = new OperatorButton(m_gamepad,c_gpdescend_BTNid);
         m_gp_pickupButton = new OperatorButton(m_gamepad,c_gppickup_BTNid);
@@ -185,13 +185,13 @@ void EntechRobot::DetermineAutonomousSetup(void)
         m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", 1500.0);
         break;
     case kMiddle:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", 3270.0);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", 3360.0);
         break;
     case kFar:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", 4200.0);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", 4350.0);
         break;
     case kSiderail:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", 2800.0);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", 3000.0);
         break;
     }
 }
@@ -269,7 +269,9 @@ void EntechRobot::TeleopPeriodic()
         }
     }
     
-    if (m_bp_shooterOnButton && m_bp_shooterOnButton->GetBool()) {
+    if (m_gp_useShooterPID && m_gp_useShooterPID->GetBool()) {
+    	m_shooter->SetRPM(m_shooterSpeed);
+    } else if (m_bp_shooterOnButton && m_bp_shooterOnButton->GetBool()) {
         m_shooter->Forward(0.5*(1.0-m_buttonpanel->GetX()));
         if (m_bp_fireButton && m_bp_fireButton->GetBool()) {
             m_shooter->TriggerOpen();

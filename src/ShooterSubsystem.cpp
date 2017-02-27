@@ -8,14 +8,14 @@ const double c_rpmTolerance = 50.0;
 const double c_rpmDeltaToActivatePID = 300.0;
 
 ShooterSubsystem::ShooterSubsystem(EntechRobot *pRobot, std::string name)
-  : RobotSubsystem(pRobot, name)
-  , m_ShooterMotor(NULL)
-  , m_solenoid1(NULL)
-  , m_solenoid2(NULL)
-  , m_mode(kVbus)
-  , m_shoot(false)
-  , m_speed(0.0)
-  , m_rpm(0.0)
+    : RobotSubsystem(pRobot, name)
+    , m_ShooterMotor(NULL)
+    , m_solenoid1(NULL)
+    , m_solenoid2(NULL)
+    , m_mode(kVbus)
+    , m_shoot(false)
+    , m_speed(0.0)
+    , m_rpm(0.0)
     , m_pidActive(false)
 {
 }
