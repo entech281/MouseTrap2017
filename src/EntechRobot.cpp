@@ -273,13 +273,12 @@ void EntechRobot::TeleopPeriodic()
     	m_shooter->SetRPM(m_shooterSpeed);
     } else if (m_bp_shooterOnButton && m_bp_shooterOnButton->GetBool()) {
         m_shooter->Forward(0.5*(1.0-m_buttonpanel->GetX()));
-        if (m_bp_fireButton && m_bp_fireButton->GetBool()) {
-            m_shooter->TriggerOpen();
-        } else {
-            m_shooter->TriggerClose();
-        }
     } else {
         m_shooter->Forward(0.0);
+    }
+    if (m_bp_fireButton && m_bp_fireButton->GetBool()) {
+        m_shooter->TriggerOpen();
+    } else {
         m_shooter->TriggerClose();
     }
 

@@ -16,7 +16,6 @@ ShooterSubsystem::ShooterSubsystem(EntechRobot *pRobot, std::string name)
     , m_shoot(false)
     , m_speed(0.0)
     , m_rpm(0.0)
-    , m_pidActive(false)
 {
 }
 
@@ -28,14 +27,16 @@ void ShooterSubsystem::Forward(double speed)
 {
     m_speed = speed;
     m_mode = kVbus;
-    m_pidActive = false;
+    m_ShooterMotor->SetControlMode(CANTalon::kPercentVbus);
+    m_ShooterMotor->Set(m_speed);
 }
 
 void ShooterSubsystem::SetRPM(double rpm)
 {
     m_rpm = rpm;
     m_mode = kRPM;
-    m_pidActive = false;
+    m_ShooterMotor->SetTalonControlMode(CANTalon::kSpeedMode);
+    m_ShooterMotor->Set(m_rpm);
 }
 
 bool ShooterSubsystem::IsAtTargetRPM(void)
@@ -65,15 +66,10 @@ void ShooterSubsystem::RobotInit()
     m_ShooterMotor->ConfigEncoderCodesPerRev(20);
 
     m_ShooterMotor->SelectProfileSlot(0);
-    // 20 pulse/rev, 4600 rpm, 10 measures/sec, 1023 max output
-    // 1023 / (4600rpm * 20pulse/rev / (60sec/min * 10 measures/sec)
-    // m_ShooterMotor->SetF(6.67);
     m_ShooterMotor->SetF(0.0);
-    m_ShooterMotor->SetP(40.0);
-    // (16.47,4) 261
-
-    m_ShooterMotor->SetI(0.04);
-    m_ShooterMotor->SetD(200.0);
+    m_ShooterMotor->SetP(10.0);
+    m_ShooterMotor->SetI(0.05);
+    m_ShooterMotor->SetD(500.0);
     m_ShooterMotor->SetAllowableClosedLoopErr(0);
 
     m_ShooterMotor->SetControlMode(CANSpeedController::kPercentVbus);
@@ -86,7 +82,6 @@ void ShooterSubsystem::UpdateDashboard()
     SmartDashboard::PutNumber("Shooter JS Speed", m_speed);
     SmartDashboard::PutNumber("Shooter Speed", m_ShooterMotor->GetSpeed());
     SmartDashboard::PutNumber("Shooter CAN Speed", m_ShooterMotor->GetEncVel());
-    SmartDashboard::PutNumber("Shooter F", m_ShooterMotor->GetF());  // 462
     SmartDashboard::PutNumber("Shooter P", m_ShooterMotor->GetP());
 }
 
@@ -122,19 +117,17 @@ void ShooterSubsystem::TeleopPeriodic()
 
 void ShooterSubsystem::AutonomousPeriodic()
 {
-    if (m_mode == kVbus) {
+    switch (m_mode) {
+    case kVbus:
         SmartDashboard::PutString("Shooter Mode", "PercentVbus");
         m_ShooterMotor->SetControlMode(CANTalon::kPercentVbus);
         m_ShooterMotor->Set(m_speed);
-    } else if (m_pidActive || (m_ShooterMotor->GetSpeed() > (m_rpm - c_rpmDeltaToActivatePID))) {
+        break;
+    case kRPM:
         SmartDashboard::PutString("Shooter Mode", "SpeedMode");
-        m_pidActive = true;
-        m_ShooterMotor->Set(m_rpm);
         m_ShooterMotor->SetTalonControlMode(CANTalon::kSpeedMode);
-    } else {
-        SmartDashboard::PutString("Shooter Mode", "PercentVbus");
-        m_ShooterMotor->SetControlMode(CANTalon::kPercentVbus);
-        m_ShooterMotor->Set(1.0);
+        m_ShooterMotor->Set(m_rpm);
+        break;
     }
     if (m_shoot) {
         m_solenoid1->Set(false);
