@@ -31,7 +31,9 @@ public:
     virtual void TestPeriodic();
 
 private:
+    enum ClimbMode { kOff, kGrab, kClimb, kLower, kAtTop };
     CANTalon* m_climberMotor;
     double m_speed;
+    ClimbMode m_mode;
 };
 #endif
