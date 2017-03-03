@@ -5,6 +5,11 @@
 
 #define LOG_FILE "/tmp/EntechRobotLog.csv"
 
+const double c_shooterSpeedNear = 1500.0;
+const double c_shooterSpeedMiddle = 3360.0;
+const double c_shooterSpeedFar = 4350.0;
+const double c_shooterSpeedSide = 3000.0;
+
 // Sample do nothing change
 
 EntechRobot::EntechRobot()
@@ -35,6 +40,9 @@ EntechRobot::EntechRobot()
     , m_autoSelectionD2(NULL)
     , m_autoSelectionD3(NULL)
     , m_autoState(kStart)
+	, m_boilerDistance(kMiddle)
+    , m_initialTurn(kStraight)
+    , m_boilerToLeft(false)
     , m_autoTimer(NULL)
 
     , m_prefs(NULL)
@@ -182,16 +190,16 @@ void EntechRobot::DetermineAutonomousSetup(void)
     m_shooterSpeed = 0.0;
     switch (m_boilerDistance) {
     case kNear:
-        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", 1500.0);
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", c_shooterSpeedNear);
         break;
     case kMiddle:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", 3360.0);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", c_shooterSpeedMiddle);
         break;
     case kFar:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", 4350.0);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", c_shooterSpeedFar);
         break;
     case kSiderail:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", 3000.0);
+    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", c_shooterSpeedSide);
         break;
     }
 }
