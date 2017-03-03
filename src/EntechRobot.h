@@ -18,8 +18,9 @@ public:
     virtual ~EntechRobot();
 
     void RegisterSubsystem(RobotSubsystem*);
-    bool IsGearDropTriggered(void);
+    bool IsGearDropped(void);
     bool IsPinSensed(void);
+    bool IsInAutoDropMode(void);
 
 protected:
     void UpdateDashboard();

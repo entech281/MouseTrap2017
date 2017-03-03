@@ -54,6 +54,7 @@ public:
 
 private:
     enum DriveMode { kManual, kAutomatic, kDeadRecon };
+    void BackoffPin(void);
     void SetMode(DriveMode mode);
     void GetVisionData(void);
     void DriveAutomatic(void);

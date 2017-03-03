@@ -234,6 +234,7 @@ void DriveSubsystem::AutonomousInit()
 #if NAVX
     m_ahrs->ZeroYaw();
 #endif
+    SmartDashboard::PutBoolean("Pi seen in Autonomous",false);
 }
 
 void DriveSubsystem::TestInit()
@@ -249,6 +250,21 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
     m_dir = angle*M_PI/180.0;
     m_speed = speed;
     m_time = time;
+    m_timer->Stop();
+    m_timer->Reset();
+    m_timer->Start();
+    m_currMode = kDeadRecon;
+    m_allowStraffe = false;
+}
+
+void DriveSubsystem::BackoffPin(void)
+{
+    double angle = GetRobotYaw() - 180.0;
+    if (angle < -180.0)
+        angle += 360.0;
+    m_dir = angle*M_PI/180.0;
+    m_speed = 0.25;
+    m_time = 0.20;
     m_timer->Stop();
     m_timer->Reset();
     m_timer->Start();
@@ -415,8 +431,8 @@ void DriveSubsystem::GetVisionData()
                         m_lateralJS = 0.0;
                     }
                 }
-	    }
-	}
+            }
+        }
     } else {
         ++m_missingRPiCount;
         if (fabs(m_visionLateral) > fabs(m_lateralDecay)) {
@@ -491,8 +507,16 @@ void DriveSubsystem::TeleopPeriodic()
     }
     switch (m_currMode) {
     case kManual:
-    case kDeadRecon:
         DriveManual();
+        break;
+    case kDeadRecon:
+        if (m_timer->Get() < m_time) {
+            DriveDeadRecon();
+        } else {
+            m_allowStraffe = false;
+            m_currMode = kManual;
+            DriveManual();
+        }
         break;
     case kAutomatic:
         DriveAutomatic();
@@ -522,13 +546,22 @@ void DriveSubsystem::AutonomousPeriodic()
         DriveAutomatic();
         break;
     }
+    if (m_missingRPiCount == 0) {
+        SmartDashboard::PutBoolean("Pi seen in Autonomous",true);
+    }
 }
 
 void DriveSubsystem::DriveAutomatic()
 {
     double jsX, jsY;
     
-    if (m_pRobot->IsGearDropTriggered() || (m_missingRPiCount > c_countUntilIgnoreRPi)) {
+    // In teleop trying automatic alignment with missing RPi -- back to manual
+    if (!m_inAutonomous && (m_missingRPiCount > c_countUntilIgnoreRPi)) {
+        DriveManual();
+        return;
+    }
+
+    if (m_pRobot->IsGearDropped() || (m_missingRPiCount > c_countUntilIgnoreRPi)) {
         m_currMode = kManual;
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
     } else {
@@ -593,8 +626,15 @@ void DriveSubsystem::DriveManual()
         jsY = m_joystick->GetY();
     }
     // If auto drive had dropped out because RPi not found, we still enforce no forward motion
-    if (m_autoDriveButton->GetBool() && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
+    if (m_inAutonomous && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
         jsY = 0.0;
+    }
+    if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_autoDriveButton->GetBool() && (jsY < 0.0)) {
+        jsY = 0.0;
+    }
+    // If not in autonomous, operator is in autodrop mode, robot is still touching pin, and the gear has been dropped
+    if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_pRobot->IsGearDropped()) {
+        BackoffPin();
     }
 
     /* Rotate the robot if the trigger being held or yaw is being maintained */

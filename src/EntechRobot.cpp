@@ -204,7 +204,7 @@ void EntechRobot::DetermineAutonomousSetup(void)
     }
 }
 
-bool EntechRobot::IsGearDropTriggered(void)
+bool EntechRobot::IsGearDropped(void)
 {
     return m_dropper->IsGearDropped();
 }
@@ -212,6 +212,15 @@ bool EntechRobot::IsGearDropTriggered(void)
 bool EntechRobot::IsPinSensed(void)
 {
     return m_dropper->IsPinSensed();
+}
+
+bool EntechRobot::IsInAutoDropMode(void)
+{
+    if ((m_gp_autodropButton && m_gp_autodropButton->GetBool()) ||
+        (m_bp_autodropButton && m_bp_autodropButton->GetBool())    ) {
+        return true;
+    }
+    return false;
 }
 
 void EntechRobot::DisabledInit()
@@ -269,8 +278,7 @@ void EntechRobot::TeleopPeriodic()
        	}
     }
 
-    if ((m_gp_autodropButton && m_gp_autodropButton->GetBool()) ||
-        (m_bp_autodropButton && m_bp_autodropButton->GetBool())    ) {
+    if (IsInAutoDropMode()) {
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
     } else {
         m_dropper->SetMode(DropperSubsystem::kManual);
