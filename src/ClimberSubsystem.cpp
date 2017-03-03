@@ -26,6 +26,7 @@ void ClimberSubsystem::RobotInit()
     m_climberMotor = new CANTalon(c_climberMotor_CANid);
     m_climberMotor->SetControlMode(CANSpeedController::kPercentVbus);
     m_climberMotor->SetInverted(true);
+    m_climberMotor->ConfigNeutralMode(frc::CANSpeedController::NeutralMode::kNeutralMode_Brake);
     // TODO Invert encoder direction too
 }
 

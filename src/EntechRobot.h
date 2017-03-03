@@ -19,6 +19,7 @@ public:
 
     void RegisterSubsystem(RobotSubsystem*);
     bool IsGearDropTriggered(void);
+    bool IsPinSensed(void);
 
 protected:
     void UpdateDashboard();

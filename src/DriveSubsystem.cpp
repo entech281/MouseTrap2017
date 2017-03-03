@@ -533,15 +533,18 @@ void DriveSubsystem::DriveAutomatic()
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
     } else {
         // Either use joystick for speed from driver or what autonomous wants
-        if (m_forwardJS < 1.0) {
+        if (m_forwardJS > 1.0) {
+            jsY = m_joystick->GetY();
+        } else {
             jsY = m_forwardJS;
             if ((m_visionDistance < 65.0) && (m_forwardJS < -0.2)) {
                 jsY = -0.2;
             } else if ((m_visionDistance < 50.0) && (m_forwardJS < -0.1)) {
                 jsY = -0.15;
             }
-        } else {
-            jsY = m_joystick->GetY();
+        }
+        if (m_pRobot->IsPinSensed() && (jsY < 0.0)) {
+            jsY = 0.0;
         }
         jsX = m_lateralJS;
         if (m_targetsBelowMinDistance) {
@@ -588,6 +591,10 @@ void DriveSubsystem::DriveManual()
     if (m_joystick) {
         jsX = m_joystick->GetX();
         jsY = m_joystick->GetY();
+    }
+    // If auto drive had dropped out because RPi not found, we still enforce no forward motion
+    if (m_autoDriveButton->GetBool() && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
+        jsY = 0.0;
     }
 
     /* Rotate the robot if the trigger being held or yaw is being maintained */

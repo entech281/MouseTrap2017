@@ -209,6 +209,11 @@ bool EntechRobot::IsGearDropTriggered(void)
     return m_dropper->IsGearDropped();
 }
 
+bool EntechRobot::IsPinSensed(void)
+{
+    return m_dropper->IsPinSensed();
+}
+
 void EntechRobot::DisabledInit()
 {
     CloseLog();
@@ -276,7 +281,7 @@ void EntechRobot::TeleopPeriodic()
             m_dropper->SetPosition(DropperSubsystem::kUp);
         }
     }
-    
+
     if (m_gp_useShooterPID && m_gp_useShooterPID->GetBool()) {
     	m_shooter->SetRPM(m_shooterSpeed);
     } else if (m_bp_shooterOnButton && m_bp_shooterOnButton->GetBool()) {
