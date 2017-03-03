@@ -130,11 +130,11 @@ void ShooterSubsystem::AutonomousPeriodic()
         break;
     }
     if (m_shoot) {
-        m_solenoid1->Set(false);
-        m_solenoid2->Set(true);
-    } else {
         m_solenoid1->Set(true);
         m_solenoid2->Set(false);
+    } else {
+        m_solenoid1->Set(false);
+        m_solenoid2->Set(true);
     }
 }
 

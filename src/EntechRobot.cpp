@@ -362,7 +362,7 @@ void EntechRobot::AutonomousPeriodic()
         m_drive->FieldAbsoluteDriving(true);
         m_drive->HoldYaw(true);
         m_drive->SetYawDirection(0.0);
-        m_drive->DriveHeading(0.0, 0.75, 0.9); 
+        m_drive->DriveHeading(0.0, 0.75, 0.75);
         m_autoState = kWaitForInitialDrive;
         break;
     case kWaitForInitialDrive:

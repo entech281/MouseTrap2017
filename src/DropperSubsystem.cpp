@@ -136,9 +136,11 @@ void DropperSubsystem::TestPeriodic()
 
 void DropperSubsystem::SetMode(DropperMode mode)
 {
-    m_mode = mode;
-    m_pinSensedCounter = 0;
-    m_autoTriggered = false;
+    if (mode != m_mode) {
+       m_mode = mode;
+       m_pinSensedCounter = 0;
+       m_autoTriggered = false;
+    }
 }
 
 void DropperSubsystem::SetPosition(DropperPosition position)
