@@ -20,6 +20,7 @@
 #define UPDATE_RATE_MS 30
 
 const int c_countUntilIgnoreRPi = 60;
+const int c_countUntilIgnoreRpiPermanently = 1000;
 const double c_minVisionDistance = 30.;
 const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
@@ -259,11 +260,8 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 
 void DriveSubsystem::BackoffPin(void)
 {
-    double angle = GetRobotYaw() - 180.0;
-    if (angle < -180.0)
-        angle += 360.0;
-    m_dir = angle*M_PI/180.0;
-    m_speed = 0.25;
+    m_dir = GetRobotYaw()*M_PI/180.0;
+    m_speed = -0.25;
     m_time = 0.20;
     m_timer->Stop();
     m_timer->Reset();
@@ -296,6 +294,11 @@ void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
 
     m_allowStraffe = false;
     m_currMode = kAutomatic;
+
+    // If RPi is not found, we are going to try anyway for a max number of seconds.
+    if (m_inAutonomous && (m_missingRPiCount > c_countUntilIgnoreRpiPermanently)) {
+        DriveHeading(GetRobotYaw(),speed,2.0);
+    }
 }
 void DriveSubsystem::AlignWithTargetFacing(double yaw_angle, double lateral_speed)
 {
@@ -557,6 +560,7 @@ void DriveSubsystem::DriveAutomatic()
     
     // In teleop trying automatic alignment with missing RPi -- back to manual
     if (!m_inAutonomous && (m_missingRPiCount > c_countUntilIgnoreRPi)) {
+        m_currMode = kManual;
         DriveManual();
         return;
     }
