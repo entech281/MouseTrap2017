@@ -6,7 +6,7 @@
 #define LOG_FILE "/tmp/EntechRobotLog.csv"
 
 const double c_shooterSpeedNear = 1500.0;
-const double c_shooterSpeedMiddle = 3360.0;
+const double c_shooterSpeedMiddle = 3200.0;
 const double c_shooterSpeedFar = 4350.0;
 const double c_shooterSpeedSide = 3000.0;
 
@@ -393,13 +393,13 @@ void EntechRobot::AutonomousPeriodic()
     case kDriveBackward:
         switch (m_initialTurn) {
         case kLeft60:
-            m_drive->DriveHeading(120.0, 0.45, 0.75);
+            m_drive->DriveHeading(120.0, 0.30, 0.90);
             break;
         case kRight60:
-            m_drive->DriveHeading(-120.0, 0.45, 0.75);
+            m_drive->DriveHeading(-120.0, 0.30, 0.90);
             break;
         case kStraight:
-            m_drive->DriveHeading(180.0, 0.45, 0.75);
+            m_drive->DriveHeading(180.0, 0.30, 0.90);
             break;
         }
         m_autoState = kWaitForDriveBackward;

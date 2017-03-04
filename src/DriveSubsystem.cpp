@@ -297,7 +297,7 @@ void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
 
     // If RPi is not found, we are going to try anyway for a max number of seconds.
     if (m_inAutonomous && (m_missingRPiCount > c_countUntilIgnoreRpiPermanently)) {
-        DriveHeading(GetRobotYaw(),speed,2.0);
+        DriveHeading(GetRobotYaw(),-speed,2.0);
     }
 }
 void DriveSubsystem::AlignWithTargetFacing(double yaw_angle, double lateral_speed)
