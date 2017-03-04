@@ -415,14 +415,10 @@ void EntechRobot::AutonomousPeriodic()
                 m_autoState = kDriveForward;
                 break;
             case kRight60:
-                if (m_boilerToLeft) {
-                    m_autoState = kSetSideShotYaw;
-                } else {
-                    m_autoState = kDriveForward;
-                }
+                m_autoState = kDriveForward;
                 break;
             case kStraight:
-                m_autoState = kBackupToEndWall;
+                m_autoState = kDriveLateral;
                 break;
             }                
         }
@@ -480,7 +476,11 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveLateral:
         // only occurs for drive straight
-        m_drive->DriveHeading(90.0, 0.80, 2.0);
+        if (m_boilerToLeft) {
+            m_drive->DriveHeading(90.0, 0.80, 2.0);
+        } else {
+            m_drive->DriveHeading(-90.0, 0.80, 2.0);
+        }
         m_autoState = kWaitForDriveLateral;
         break;
     case kWaitForDriveLateral:
