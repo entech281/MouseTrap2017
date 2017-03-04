@@ -338,7 +338,8 @@ void EntechRobot::AutonomousPeriodic()
     switch(m_autoState) {
     case kStart:
         m_autoState = kTurnOnShooter;
-        if (m_boilerToLeft) {
+        // always gear first
+        // if (m_boilerToLeft) {
             if (m_initialTurn == kStraight) {
                 m_drive->SetYawDirection(0.0);
                 m_drive->HoldYaw(true);
@@ -346,38 +347,7 @@ void EntechRobot::AutonomousPeriodic()
             } else {
                 m_autoState = kInitialDrive;
             }
-        }
-        break;
-    case kTurnOnShooter:
-    	m_shooter->SetRPM(m_shooterSpeed);
-        m_autoState = kWaitForShooterToSpinup;
-        break;
-    case kWaitForShooterToSpinup:
-        if (m_shooter->IsAtTargetRPM()) {
-            m_autoState = kShootFuelLoad;
-        }
-        break;
-    case kShootFuelLoad:
-        m_shooter->TriggerOpen();
-        m_autoTimer->Stop();
-        m_autoTimer->Reset();
-        m_autoTimer->Start();
-        m_autoState = kWaitForShootFuelLoad;
-        break;
-    case kWaitForShootFuelLoad:
-        if (m_autoTimer->Get() > 4.5) {
-            m_shooter->Forward(0.0);
-            m_shooter->TriggerClose();
-            if (m_initialTurn == kStraight) {
-                m_drive->SetYawDirection(0.0);
-                m_drive->HoldYaw(true);
-                m_autoState = kDriveToTarget;
-            } else if (m_boilerDistance == kSiderail) {
-            	m_autoState = kDone;
-            } else {
-                m_autoState = kInitialDrive;
-            }
-        }
+        //}
         break;
     case kInitialDrive:
         m_drive->FieldAbsoluteDriving(true);
@@ -429,7 +399,7 @@ void EntechRobot::AutonomousPeriodic()
             m_drive->DriveHeading(-120.0, 0.45, 0.75);
             break;
         case kStraight:
-            m_drive->DriveHeading(180.0, 0.40, 1.5);
+            m_drive->DriveHeading(180.0, 0.45, 0.75);
             break;
         }
         m_autoState = kWaitForDriveBackward;
@@ -452,13 +422,60 @@ void EntechRobot::AutonomousPeriodic()
                 }
                 break;
             case kStraight:
-                if (m_boilerToLeft) {
-                    m_autoState = kSetSideShotYaw;
-                } else {
-                    m_autoState = kDriveLateral;
-                }
+                m_autoState = kBackupToEndWall;
                 break;
             }                
+        }
+        break;
+    case kBackupToEndWall:
+        if (m_boilerToLeft) {
+            m_drive->SetYawDirection(180.0);
+            m_drive->HoldYaw(true);
+        } else {
+            m_drive->SetYawDirection(0.0);
+            m_drive->HoldYaw(true);
+        }
+        m_shooter->SetRPM(m_shooterSpeed);
+        m_drive->DriveHeading(180.0,0.4,2.0);
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
+        m_autoTimer->Start();
+        m_autoState = kWaitForBackupToEndWall;
+        break;
+    case kWaitForBackupToEndWall:
+        if ((m_autoTimer->Get() > 0.5) && (m_drive->Stopped() || m_drive->Done())) {
+            m_autoState = kTurnOnShooter;
+        }
+        break;
+    case kTurnOnShooter:
+        m_autoState = kWaitForShooterToSpinup;
+        break;
+    case kWaitForShooterToSpinup:
+        if (m_shooter->IsAtTargetRPM()) {
+            m_autoState = kShootFuelLoad;
+        }
+        break;
+    case kShootFuelLoad:
+        m_shooter->TriggerOpen();
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
+        m_autoTimer->Start();
+        m_autoState = kWaitForShootFuelLoad;
+        break;
+    case kWaitForShootFuelLoad:
+        if (m_autoTimer->Get() > 4.0) {
+            m_shooter->Forward(0.0);
+            m_shooter->TriggerClose();
+            if (m_initialTurn == kStraight) {
+                m_drive->SetYawDirection(0.0);
+                m_drive->HoldYaw(true);
+                m_drive->DriveHeading(0.0,0.4,0.2);
+                m_autoState = kWaitForDriveForward;
+            } else if (m_boilerDistance == kSiderail) {
+                m_autoState = kDone;
+            } else {
+                m_autoState = kInitialDrive;
+            }
         }
         break;
     case kDriveLateral:

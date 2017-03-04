@@ -83,6 +83,7 @@ private:
                      kSetSideShotYaw, kWaitForSetSideShotYaw,
                      kClearAirship, kWaitForClearAirship,
                      kAlignToTarget, kWaitForAlignToTarget,
+                     kBackupToEndWall, kWaitForBackupToEndWall,
                      kBackupToWall, kWaitForBackupToWall,
                      kDone };
     AutoState m_autoState;
