@@ -35,5 +35,6 @@ private:
     CANTalon* m_climberMotor;
     double m_speed;
     ClimbMode m_mode;
+    Timer *m_timer;
 };
 #endif
