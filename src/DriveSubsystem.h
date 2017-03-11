@@ -93,7 +93,7 @@ private:
 
     double m_yawWhenTargetsLastSeen;
     double m_lateralWhenTargetsLastSeen;
-    
+
     // Simulated JS outputs from PID controllers
     double m_yawJStwist;
     double m_lateralJS;
@@ -113,7 +113,7 @@ private:
 
     bool m_fieldAbsolute;
     bool m_holdYaw;
-    
+
     OperatorButton *m_fieldAbsoluteToggleButton;
     OperatorButton *m_holdYawToggleButton;
     OperatorButton *m_yawToP60Button;
@@ -121,5 +121,6 @@ private:
     OperatorButton *m_yawToM60Button;
     OperatorButton *m_resetYawToZeroButton;
     OperatorButton *m_autoDriveButton;
+    OperatorButton *m_autoYawButton;
 };
 #endif

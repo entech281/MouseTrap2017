@@ -40,7 +40,7 @@ EntechRobot::EntechRobot()
     , m_autoSelectionD2(NULL)
     , m_autoSelectionD3(NULL)
     , m_autoState(kStart)
-	, m_boilerDistance(kMiddle)
+    , m_boilerDistance(kMiddle)
     , m_initialTurn(kStraight)
     , m_boilerToLeft(false)
     , m_autoTimer(NULL)
@@ -58,7 +58,7 @@ void EntechRobot::OpenLog(void)
     m_logFP = fopen(LOG_FILE, "w");
     if (m_logFP) {
         fputs("autoState,",m_logFP);
-        
+
         for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
              it != m_robotSubsystems.end(); ++it) {
             (*it)->LogHeader(m_logFP);
@@ -104,10 +104,10 @@ void EntechRobot::RobotInit()
         m_compressor->SetClosedLoopControl(true);
         m_compressor->Start();
     }
-    
+
     m_gamepad = new Joystick(c_operatorGPid);
     if (m_gamepad) {
-    	m_gp_useShooterPID = new OperatorButton(m_gamepad,4);
+        m_gp_useShooterPID = new OperatorButton(m_gamepad,4);
         m_gp_climbButton = new OperatorButton(m_gamepad,c_gpclimb_BTNid);
         m_gp_descendButton = new OperatorButton(m_gamepad,c_gpdescend_BTNid);
         m_gp_pickupButton = new OperatorButton(m_gamepad,c_gppickup_BTNid);
@@ -129,7 +129,7 @@ void EntechRobot::RobotInit()
     m_autoSelectionD2 = new frc::DigitalInput(c_autoSelectorD2Channel);
     m_autoSelectionD3 = new frc::DigitalInput(c_autoSelectorD3Channel);
 
-    /* 
+    /*
      * Iterate through each sub-system and run the
      * appropriate function for the current mode.
      * Descriptions for each mode can be found in
@@ -181,10 +181,10 @@ void EntechRobot::DetermineAutonomousSetup(void)
             m_boilerDistance = kNear;
         m_initialTurn = kRight60;
     } else {
-    	// impossible
+        // impossible
     }
     if (m_boilerToLeft)
-    	m_boilerDistance = kSiderail;
+        m_boilerDistance = kSiderail;
 
     // Set shooter speed based on boiler distance
     m_shooterSpeed = 0.0;
@@ -193,13 +193,13 @@ void EntechRobot::DetermineAutonomousSetup(void)
         m_shooterSpeed = m_prefs->GetDouble("shooterSpeedNear", c_shooterSpeedNear);
         break;
     case kMiddle:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", c_shooterSpeedMiddle);
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedMiddle", c_shooterSpeedMiddle);
         break;
     case kFar:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", c_shooterSpeedFar);
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedFar", c_shooterSpeedFar);
         break;
     case kSiderail:
-    	m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", c_shooterSpeedSide);
+        m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", c_shooterSpeedSide);
         break;
     }
 }
@@ -226,7 +226,7 @@ bool EntechRobot::IsInAutoDropMode(void)
 void EntechRobot::DisabledInit()
 {
     CloseLog();
-    
+
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->DisabledInit();
@@ -238,7 +238,7 @@ void EntechRobot::DisabledInit()
 void EntechRobot::DisabledPeriodic()
 {
     DetermineAutonomousSetup();
-    
+
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();
          it != m_robotSubsystems.end(); ++it) {
         (*it)->DisabledPeriodic();
@@ -271,11 +271,11 @@ void EntechRobot::TeleopPeriodic()
     }
 
     if (m_pickup) {
-      	if (m_gp_pickupButton && m_gp_pickupButton->GetBool()) {
-       		m_pickup->SetPosition(PickUpSubsystem::kDown);
-       	} else {
-       		m_pickup->SetPosition(PickUpSubsystem::kUp);
-       	}
+        if (m_gp_pickupButton && m_gp_pickupButton->GetBool()) {
+            m_pickup->SetPosition(PickUpSubsystem::kDown);
+        } else {
+       	    m_pickup->SetPosition(PickUpSubsystem::kUp);
+        }
     }
 
     if (IsInAutoDropMode()) {
@@ -291,7 +291,7 @@ void EntechRobot::TeleopPeriodic()
     }
 
     if (m_gp_useShooterPID && m_gp_useShooterPID->GetBool()) {
-    	m_shooter->SetRPM(m_shooterSpeed);
+        m_shooter->SetRPM(m_shooterSpeed);
     } else if (m_bp_shooterOnButton && m_bp_shooterOnButton->GetBool()) {
         m_shooter->Forward(0.5*(1.0-m_buttonpanel->GetX()));
     } else {
@@ -353,7 +353,7 @@ void EntechRobot::AutonomousPeriodic()
         m_drive->FieldAbsoluteDriving(true);
         m_drive->HoldYaw(true);
         m_drive->SetYawDirection(0.0);
-        m_drive->DriveHeading(0.0, 0.75, 0.75);
+        m_drive->DriveHeading(0.0, 0.4, 0.90);
         m_autoState = kWaitForInitialDrive;
         break;
     case kWaitForInitialDrive:
@@ -369,7 +369,7 @@ void EntechRobot::AutonomousPeriodic()
             m_drive->HoldYaw(true);
             m_drive->SetYawDirection(-60.0);
         }
-        m_drive->DriveHeading(0.0, 0.75, 0.50); 
+        m_drive->DriveHeading(0.0, 0.4, 0.50);
         m_autoState = kWaitForInitialTurn;
         break;
     case kWaitForInitialTurn:
@@ -420,7 +420,7 @@ void EntechRobot::AutonomousPeriodic()
             case kStraight:
                 m_autoState = kDriveLateral;
                 break;
-            }                
+            }
         }
         break;
     case kBackupToEndWall:

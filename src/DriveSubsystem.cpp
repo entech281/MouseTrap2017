@@ -97,6 +97,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_yawToM60Button(NULL)
     , m_resetYawToZeroButton(NULL)
     , m_autoDriveButton(NULL)
+    , m_autoYawButton(NULL)
 {
 }
 
@@ -109,7 +110,7 @@ void DriveSubsystem::RobotInit()
     // Try creating the NavX first, to give it time to calibrate
 #if NAVX_USB
     try {
-    	m_ahrs = new AHRS(SerialPort::Port::kUSB);
+        m_ahrs = new AHRS(SerialPort::Port::kUSB);
         DriverStation::ReportWarning("NavX USB found");
         m_ahrs->Reset();
     } catch (std::exception& ex) {
@@ -119,7 +120,7 @@ void DriveSubsystem::RobotInit()
 #endif
 #if NAVX_MXP
     try {
-    	m_ahrs = new AHRS(SPI::kMXP);
+        m_ahrs = new AHRS(SPI::kMXP);
         DriverStation::ReportWarning("NavX MXP found");
         m_ahrs->Reset();
     } catch (std::exception& ex) {
@@ -129,16 +130,16 @@ void DriveSubsystem::RobotInit()
 #endif
 #if IMU_MXP
     try {
-    	m_imu = new ADIS16448_IMU();
+        m_imu = new ADIS16448_IMU();
         DriverStation::ReportWarning("IMU MXP found");
     	m_imu->Calibrate();
     	m_imu->Reset();
     } catch (std::exception & ex) {
         DriverStation::ReportWarning("IMU MXP MISSING");
-    	m_imu = NULL;
+        m_imu = NULL;
     }
 #endif
-    
+
     m_flmotor = new CANTalon(c_flmotor_CANid);
     m_frmotor = new CANTalon(c_frmotor_CANid);
     m_rlmotor = new CANTalon(c_rlmotor_CANid);
@@ -175,7 +176,7 @@ void DriveSubsystem::RobotInit()
     m_yawController->SetOutputRange(-1.0, 1.0);
     m_yawController->Disable();
 #endif
-    
+
     m_lateralController = new frc::PIDController(kLateral_P, kLateral_I, kLateral_D, m_lateralPIDInterface, m_lateralPIDInterface);
     m_lateralController->SetAbsoluteTolerance(kLateral_TolerancePixels);
     m_lateralController->SetInputRange(-100.0, 100.0);
@@ -191,7 +192,7 @@ void DriveSubsystem::RobotInit()
     m_distanceController->Disable();
 
     m_timer = new frc::Timer();
-    
+
     // Driver interface on Driver joystick buttons
     m_joystick = new Joystick(c_driverJSid);
     m_fieldAbsoluteToggleButton = new OperatorButton(m_joystick, c_jsfieldAbs_BTNid);
@@ -201,6 +202,7 @@ void DriveSubsystem::RobotInit()
     m_yawToM60Button  = new OperatorButton(m_joystick, c_jsYawToM60_BTNid);
     m_resetYawToZeroButton  = new OperatorButton(m_joystick, c_jsYawReset_BTNid);
     m_autoDriveButton = new OperatorButton(m_joystick, c_jsthumb_BTNid);
+    m_autoYawButton = new OperatorButton(m_joystick, c_jsAutoYaw_BTNid);
 
     // OK make sure the NavX has finished calibrating
 #if NAVX
@@ -477,20 +479,20 @@ void DriveSubsystem::TeleopPeriodic()
     }
 #if NAVX || IMU_MXP
     if (m_holdYawToggleButton->Get() == OperatorButton::kJustPressed) {
-    	SetYawDirection(GetRobotYaw());
-    	HoldYaw(!m_holdYaw);
+        SetYawDirection(GetRobotYaw());
+        HoldYaw(!m_holdYaw);
     }
     if (m_yawToP60Button->Get() == OperatorButton::kJustPressed) {
         SetYawDirection(60.0);
-    	HoldYaw(true);
+        HoldYaw(true);
     }
     if (m_yawToZeroButton->Get() == OperatorButton::kJustPressed) {
         SetYawDirection(0.0);
-    	HoldYaw(true);
+        HoldYaw(true);
     }
     if (m_yawToM60Button->Get() == OperatorButton::kJustPressed) {
         SetYawDirection(-60.0);
-    	HoldYaw(true);
+        HoldYaw(true);
     }
     if (m_resetYawToZeroButton->Get() == OperatorButton::kJustPressed) {
         m_ahrs->ZeroYaw();
@@ -557,7 +559,7 @@ void DriveSubsystem::AutonomousPeriodic()
 void DriveSubsystem::DriveAutomatic()
 {
     double jsX, jsY;
-    
+
     // In teleop trying automatic alignment with missing RPi -- back to manual
     if (!m_inAutonomous && (m_missingRPiCount > c_countUntilIgnoreRPi)) {
         m_currMode = kManual;
@@ -606,28 +608,32 @@ void DriveSubsystem::DriveDeadRecon()
     gyroAngle = 0.0;
 #if NAVX
     if (m_fieldAbsolute && m_ahrs) {
-    	gyroAngle = m_ahrs->GetAngle();
+        gyroAngle = m_ahrs->GetAngle();
     }
 #endif
 #if IMU_MXP
     if (m_fieldAbsolute && m_imu) {
-    	gyroAngle = m_imu->GetAngle();
+        gyroAngle = m_imu->GetAngle();
     }
 #endif
-    
+
     /* Move the robot */
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
 }
 
 void DriveSubsystem::DriveManual()
 {
-    double jsX, jsY, jsT, gyroAngle;
+    double jsX, jsY, jsT, jsAngle, gyroAngle;
 
     jsX = 0.0;
     jsY = 0.0;
+    jsAngle = 360.0;
     if (m_joystick) {
         jsX = m_joystick->GetX();
         jsY = m_joystick->GetY();
+        if ((fabs(jsX) > 0.1) || (fabs(jsY) > 0.1)) {
+            jsAngle = 180.0*atan2(jsX,-jsY)/M_PI;
+        }
     }
     // If auto drive had dropped out because RPi not found, we still enforce no forward motion
     if (m_inAutonomous && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
@@ -654,12 +660,18 @@ void DriveSubsystem::DriveManual()
     gyroAngle = 0.0;
 #if NAVX
     if (m_fieldAbsolute && m_ahrs) {
-    	gyroAngle = m_ahrs->GetAngle();
+        gyroAngle = m_ahrs->GetAngle();
     }
 #endif
 #if IMU_MXP
     if (m_fieldAbsolute && m_imu) {
-    	gyroAngle = m_imu->GetAngle();
+        gyroAngle = m_imu->GetAngle();
+    }
+#endif
+#if NAVX || IMU_MXP
+    if (m_autoYawButton && m_autoYawButton->GetBool() && jsAngle < 360.0) {
+        SetYawDirection(jsAngle);
+        HoldYaw(true);
     }
 #endif
 
