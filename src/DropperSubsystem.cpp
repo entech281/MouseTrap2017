@@ -4,7 +4,7 @@
 #include "DropperSubsystem.h"
 #include "RobotConstants.h"
 
-const int c_pinSensesUntilDrop = 0;
+const int c_pinSensesUntilDrop = 5;
 
 DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
     : RobotSubsystem(pRobot, name)

@@ -270,6 +270,10 @@ void DriveSubsystem::BackoffPin(void)
     m_timer->Start();
     m_currMode = kDeadRecon;
     m_allowStraffe = false;
+#if NAVX || IMU_MXP
+    SetYawDirection(GetRobotYaw());
+    HoldYaw(true);
+#endif
 }
 
 void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
@@ -582,9 +586,9 @@ void DriveSubsystem::DriveAutomatic()
                 jsY = -0.15;
             }
         }
-        if (m_pRobot->IsPinSensed() && (jsY < 0.0)) {
-            jsY = 0.0;
-        }
+        //if (m_pRobot->IsPinSensed() && (jsY < 0.0)) {
+        //    jsY = 0.0;
+        //}
         jsX = m_lateralJS;
         if (m_targetsBelowMinDistance) {
             jsX = 0.0;
@@ -636,12 +640,12 @@ void DriveSubsystem::DriveManual()
         }
     }
     // If auto drive had dropped out because RPi not found, we still enforce no forward motion
-    if (m_inAutonomous && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
-        jsY = 0.0;
-    }
-    if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_autoDriveButton->GetBool() && (jsY < 0.0)) {
-        jsY = 0.0;
-    }
+    //if (m_inAutonomous && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
+    //    jsY = 0.0;
+    //}
+    //if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_autoDriveButton->GetBool() && (jsY < 0.0)) {
+    //    jsY = 0.0;
+    //}
     // If not in autonomous, operator is in autodrop mode, robot is still touching pin, and the gear has been dropped
     if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_pRobot->IsGearDropped()) {
         BackoffPin();

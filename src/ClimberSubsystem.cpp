@@ -85,6 +85,7 @@ void ClimberSubsystem::DisabledPeriodic()
     m_mode = kOff;
     m_climberMotor->Set(0.0);
 }
+
 //declares that the robot should turn the rope climber when the button is pressed.
 void ClimberSubsystem::TeleopPeriodic()
 {
