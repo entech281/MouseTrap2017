@@ -34,6 +34,9 @@ EntechRobot::EntechRobot()
     , m_bp_autodropButton(NULL)
     , m_bp_shooterOnButton(NULL)
     , m_bp_fireButton(NULL)
+    , m_bp_yawLeftButton(NULL)
+    , m_bp_yawRightButton(NULL)
+    , m_bp_yawZeroButton(NULL)
 
     , m_autonomousActive(true)
     , m_autoSelectionD1(NULL)
@@ -121,6 +124,9 @@ void EntechRobot::RobotInit()
         m_bp_autodropButton = new OperatorButton(m_buttonpanel,c_opautodrop_BTNid);
         m_bp_shooterOnButton = new OperatorButton(m_buttonpanel,c_opshooterOn_BTNid);
         m_bp_fireButton = new OperatorButton(m_buttonpanel,c_opfire_BTNid);
+        m_bp_yawLeftButton = new OperatorButton(m_buttonpanel,c_opleft_BTNid);
+        m_bp_yawRightButton = new OperatorButton(m_buttonpanel,c_opyawright_BTNid);
+        m_bp_yawZeroButton = new OperatorButton(m_buttonpanel,c_opyawzero_BTNid);
     }
 
     m_autoState = kStart;
@@ -301,6 +307,17 @@ void EntechRobot::TeleopPeriodic()
         m_shooter->TriggerOpen();
     } else {
         m_shooter->TriggerClose();
+    }
+
+    if (m_bp_yawLeftButton && m_bp_yawLeftButton->GetBool()) {
+        m_drive->SetYawDirection(-60.0);
+        m_drive->HoldYaw(true);
+    } else if (m_bp_yawRightButton && m_bp_yawRightButton->GetBool()) {
+        m_drive->SetYawDirection(60.0);
+        m_drive->HoldYaw(true);
+    } else if (m_bp_yawZeroButton && m_bp_yawZeroButton->GetBool()) {
+        m_drive->SetYawDirection(0.0);
+        m_drive->HoldYaw(true);
     }
 
     for (std::list<RobotSubsystem*>::iterator it = m_robotSubsystems.begin();

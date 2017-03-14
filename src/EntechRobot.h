@@ -57,13 +57,16 @@ private:
     OperatorButton *m_gp_dropButton;
     OperatorButton *m_gp_pickupButton;
     OperatorButton *m_gp_autodropButton;
-    
+
     Joystick *m_buttonpanel;
     OperatorButton *m_bp_climbButton;
     OperatorButton *m_bp_dropButton;
     OperatorButton *m_bp_autodropButton;
     OperatorButton *m_bp_shooterOnButton;
     OperatorButton *m_bp_fireButton;
+    OperatorButton *m_bp_yawLeftButton;
+    OperatorButton *m_bp_yawRightButton;
+    OperatorButton *m_bp_yawZeroButton;
 
     std::list<RobotSubsystem*> m_robotSubsystems;
 
