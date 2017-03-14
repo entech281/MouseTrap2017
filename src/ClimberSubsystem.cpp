@@ -8,7 +8,7 @@ const double c_grabSpeed = 0.5;
 const double c_climbSpeed = 1.0;
 const double c_currentThreshold = 10.0;
 const double c_speedThreshold = 100.0;
-const double c_minClimbTimer = 1.0;
+const double c_minClimbTime = 1.0;
 
 ClimberSubsystem::ClimberSubsystem(EntechRobot *pRobot, std::string name)
   : RobotSubsystem(pRobot, name)
@@ -32,7 +32,7 @@ void ClimberSubsystem::RobotInit()
     // TODO Invert encoder direction too
 
     m_timer = new Timer();
-    m_timer->Off();
+    m_timer->Stop();
     m_timer->Reset();
 }
 

@@ -124,7 +124,7 @@ void EntechRobot::RobotInit()
         m_bp_autodropButton = new OperatorButton(m_buttonpanel,c_opautodrop_BTNid);
         m_bp_shooterOnButton = new OperatorButton(m_buttonpanel,c_opshooterOn_BTNid);
         m_bp_fireButton = new OperatorButton(m_buttonpanel,c_opfire_BTNid);
-        m_bp_yawLeftButton = new OperatorButton(m_buttonpanel,c_opleft_BTNid);
+        m_bp_yawLeftButton = new OperatorButton(m_buttonpanel,c_opyawleft_BTNid);
         m_bp_yawRightButton = new OperatorButton(m_buttonpanel,c_opyawright_BTNid);
         m_bp_yawZeroButton = new OperatorButton(m_buttonpanel,c_opyawzero_BTNid);
     }
