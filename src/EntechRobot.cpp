@@ -354,17 +354,16 @@ void EntechRobot::AutonomousPeriodic()
 {
     switch(m_autoState) {
     case kStart:
-        m_autoState = kTurnOnShooter;
-        // always gear first
-        // if (m_boilerToLeft) {
-            if (m_initialTurn == kStraight) {
-                m_drive->SetYawDirection(0.0);
-                m_drive->HoldYaw(true);
-                m_autoState = kDriveToTarget;
-            } else {
-                m_autoState = kInitialDrive;
-            }
-        //}
+        // gear first -- if in middle
+        if (m_initialTurn == kStraight) {
+            m_drive->SetYawDirection(0.0);
+            m_drive->HoldYaw(true);
+            m_autoState = kDriveToTarget;
+        } else if (m_boilerToLeft) {
+            m_autoState = kInitialDrive;
+        } else {
+            m_autoState = kTurnOnShooter;
+        }
         break;
     case kInitialDrive:
         m_drive->FieldAbsoluteDriving(true);
@@ -435,7 +434,7 @@ void EntechRobot::AutonomousPeriodic()
                 m_autoState = kDriveForward;
                 break;
             case kStraight:
-                m_autoState = kDriveLateral;
+                m_autoState = kBackupToEndWall;
                 break;
             }
         }
@@ -457,10 +456,11 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kWaitForBackupToEndWall:
         if ((m_autoTimer->Get() > 0.5) && (m_drive->Stopped() || m_drive->Done())) {
-            m_autoState = kTurnOnShooter;
+            m_autoState = kWaitForShooterToSpinup;
         }
         break;
     case kTurnOnShooter:
+        m_shooter->SetRPM(m_shooterSpeed);
         m_autoState = kWaitForShooterToSpinup;
         break;
     case kWaitForShooterToSpinup:
