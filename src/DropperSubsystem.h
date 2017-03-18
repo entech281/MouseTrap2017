@@ -35,7 +35,8 @@ public:
 private:
     Solenoid* m_dropperSolenoid1;
     Solenoid* m_dropperSolenoid2;
-    DigitalInput *m_limitSwitch;
+    DigitalInput *m_limitSwitch1;
+    DigitalInput *m_limitSwitch2;
     Timer *m_timer;
     DropperPosition m_position;
     DropperMode m_mode;

@@ -35,11 +35,26 @@ const int c_jsHoldYaw_BTNid   = 10;
 const int c_jsAutoYaw_BTNid   = 11;
 
 // Operator Gamepad buttons
+#define PS4_GAMEPAD 0
+#define LOGITECH_GAMEPAD 1
+#if PS4_GAMEPAD
 const int c_gpclimb_BTNid = 1;
 const int c_gpautodrop_BTNid = 2;
 const int c_gpdescend_BTNid = 3;
+const int c_gpshooterSpd_BTNid = 4;
 const int c_gppickup_BTNid = 7;
 const int c_gpdrop_BTNid = 8;
+const int c_gpfire_BTNid = 5;
+#endif
+#if LOGITECH_GAMEPAD
+const int c_gpclimb_BTNid = 4;
+const int c_gpdescend_BTNid = 1;
+const int c_gpshooterSpd_BTNid = 3;
+const int c_gpfire_BTNid = 2;
+const int c_gppickup_BTNid = 6;
+const int c_gpautodrop_BTNid = 5;
+const int c_gpdrop_BTNid = 7;
+#endif
 
 // Operator Panel buttons
 const int c_opclimb_BTNid = 5;
@@ -47,12 +62,13 @@ const int c_opdrop_BTNid = 7;
 const int c_opautodrop_BTNid = 6;
 const int c_opshooterOn_BTNid = 3;
 const int c_opfire_BTNid = 4;
-const int c_opyawleft_BTNid = 8;
-const int c_opyawzero_BTNid = 9;
-const int c_opyawright_BTNid = 10;
+const int c_opyawleft_BTNid = 9;
+const int c_opyawzero_BTNid = 10;
+const int c_opyawright_BTNid = 8;
 
 // Digital Inputs/Outputs
-const int c_dropperSensor = 0;
+const int c_dropperSensor1 = 0;
+const int c_dropperSensor2 = 1;
 const int c_autoSelectorD1Channel = 7;
 const int c_autoSelectorD2Channel = 8;
 const int c_autoSelectorD3Channel = 9;

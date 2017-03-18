@@ -28,6 +28,7 @@ EntechRobot::EntechRobot()
     , m_gp_dropButton(NULL)
     , m_gp_pickupButton(NULL)
     , m_gp_autodropButton(NULL)
+    , m_gp_fireButton(NULL)
     , m_buttonpanel(NULL)
     , m_bp_climbButton(NULL)
     , m_bp_dropButton(NULL)
@@ -110,12 +111,13 @@ void EntechRobot::RobotInit()
 
     m_gamepad = new Joystick(c_operatorGPid);
     if (m_gamepad) {
-        m_gp_useShooterPID = new OperatorButton(m_gamepad,4);
+        m_gp_useShooterPID = new OperatorButton(m_gamepad,c_gpshooterSpd_BTNid);
         m_gp_climbButton = new OperatorButton(m_gamepad,c_gpclimb_BTNid);
         m_gp_descendButton = new OperatorButton(m_gamepad,c_gpdescend_BTNid);
         m_gp_pickupButton = new OperatorButton(m_gamepad,c_gppickup_BTNid);
         m_gp_autodropButton = new OperatorButton(m_gamepad,c_gpautodrop_BTNid);
         m_gp_dropButton = new OperatorButton(m_gamepad,c_gpdrop_BTNid);
+        m_gp_fireButton = new OperatorButton(m_gamepad,c_gpfire_BTNid);
     }
     m_buttonpanel = new Joystick(c_operatorBPid);
     if (m_buttonpanel) {
@@ -308,6 +310,11 @@ void EntechRobot::TeleopPeriodic()
     } else {
         m_shooter->TriggerClose();
     }
+    if (m_gp_fireButton && m_gp_fireButton->GetBool()) {
+        m_shooter->TriggerOpen();
+    } else {
+        m_shooter->TriggerClose();
+    }
 
     if (m_bp_yawLeftButton && m_bp_yawLeftButton->GetBool()) {
         m_drive->SetYawDirection(-60.0);
@@ -369,7 +376,7 @@ void EntechRobot::AutonomousPeriodic()
         m_drive->FieldAbsoluteDriving(true);
         m_drive->HoldYaw(true);
         m_drive->SetYawDirection(0.0);
-        m_drive->DriveHeading(0.0, 0.4, 0.90);
+        m_drive->DriveHeading(0.0, 0.4, 1.50);
         m_autoState = kWaitForInitialDrive;
         break;
     case kWaitForInitialDrive:
@@ -379,13 +386,13 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kInitialTurn:
         if (m_initialTurn == kRight60) {
-            m_drive->HoldYaw(true);
             m_drive->SetYawDirection(60.0);
-        } else if (m_initialTurn == kLeft60) {
             m_drive->HoldYaw(true);
+        } else if (m_initialTurn == kLeft60) {
             m_drive->SetYawDirection(-60.0);
+            m_drive->HoldYaw(true);
         }
-        m_drive->DriveHeading(0.0, 0.4, 0.50);
+        m_drive->DriveHeading(0.0, 0.25, 0.30);
         m_autoState = kWaitForInitialTurn;
         break;
     case kWaitForInitialTurn:
@@ -395,7 +402,7 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget(-0.25);
+        m_drive->DriveToVisionTarget(-0.25,true);
         m_autoState = kWaitForDriveToTarget;
         break;
     case kWaitForDriveToTarget:

@@ -4,13 +4,14 @@
 #include "DropperSubsystem.h"
 #include "RobotConstants.h"
 
-const int c_pinSensesUntilDrop = 5;
+const int c_pinSensesUntilDrop = 20;
 
 DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
     : RobotSubsystem(pRobot, name)
     , m_dropperSolenoid1(NULL)
     , m_dropperSolenoid2(NULL)
-    , m_limitSwitch(NULL)
+    , m_limitSwitch1(NULL)
+    , m_limitSwitch2(NULL)
     , m_timer(NULL)
     , m_position(kUp)
     , m_mode(kManual)
@@ -28,7 +29,8 @@ void DropperSubsystem::RobotInit()
 {
     m_dropperSolenoid1 = new Solenoid(c_compressorPCMid, c_dropperSolenoidChannel1);
     m_dropperSolenoid2 = new Solenoid(c_compressorPCMid, c_dropperSolenoidChannel2);
-    m_limitSwitch = new DigitalInput(c_dropperSensor);
+    m_limitSwitch1 = new DigitalInput(c_dropperSensor1);
+    m_limitSwitch2 = new DigitalInput(c_dropperSensor2);
     m_timer = new Timer();
 }
 
@@ -164,5 +166,7 @@ bool DropperSubsystem::IsGearDropped()
 // Using a normally closed limit switch wiring can switch this
 bool DropperSubsystem::IsPinSensed(void)
 {
-    return !m_limitSwitch->Get();
+   if (m_limitSwitch1->Get() && m_limitSwitch2->Get())
+      return false;
+    return true;
 }

@@ -57,6 +57,7 @@ private:
     OperatorButton *m_gp_dropButton;
     OperatorButton *m_gp_pickupButton;
     OperatorButton *m_gp_autodropButton;
+    OperatorButton *m_gp_fireButton;
 
     Joystick *m_buttonpanel;
     OperatorButton *m_bp_climbButton;
