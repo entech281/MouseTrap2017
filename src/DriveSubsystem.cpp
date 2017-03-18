@@ -201,7 +201,7 @@ void DriveSubsystem::RobotInit()
     m_yawToZeroButton = new OperatorButton(m_joystick, c_jsYawToZero_BTNid);
     m_yawToM60Button  = new OperatorButton(m_joystick, c_jsYawToM60_BTNid);
     m_resetYawToZeroButton  = new OperatorButton(m_joystick, c_jsYawReset_BTNid);
-    m_autoDriveButton = new OperatorButton(m_joystick, c_jsthumb_BTNid);
+    m_autoDriveButton = new OperatorButton(m_joystick, c_jsautodrive_BTNid);
     m_autoYawButton = new OperatorButton(m_joystick, c_jsAutoYaw_BTNid);
 
     // OK make sure the NavX has finished calibrating

@@ -305,12 +305,8 @@ void EntechRobot::TeleopPeriodic()
     } else {
         m_shooter->Forward(0.0);
     }
-    if (m_bp_fireButton && m_bp_fireButton->GetBool()) {
-        m_shooter->TriggerOpen();
-    } else {
-        m_shooter->TriggerClose();
-    }
-    if (m_gp_fireButton && m_gp_fireButton->GetBool()) {
+    if ((m_bp_fireButton && m_bp_fireButton->GetBool()) ||
+        (m_gp_fireButton && m_gp_fireButton->GetBool())    ){
         m_shooter->TriggerOpen();
     } else {
         m_shooter->TriggerClose();
@@ -366,10 +362,10 @@ void EntechRobot::AutonomousPeriodic()
             m_drive->SetYawDirection(0.0);
             m_drive->HoldYaw(true);
             m_autoState = kDriveToTarget;
+        } else if (!m_boilerToLeft && (m_boilerDistance == kFar)) {
+            m_autoState = kTurnOnShooter;
         } else  {
             m_autoState = kInitialDrive;
-        //} else {
-        //    m_autoState = kTurnOnShooter;
         }
         break;
     case kInitialDrive:
@@ -490,7 +486,7 @@ void EntechRobot::AutonomousPeriodic()
             if (m_initialTurn == kStraight) {
                 m_drive->SetYawDirection(0.0);
                 m_drive->HoldYaw(true);
-                m_drive->DriveHeading(0.0,0.4,0.2);
+                m_drive->DriveHeading(0.0,0.4,0.5);
                 m_autoState = kWaitForDriveForward;
             } else if (m_boilerDistance == kSiderail) {
                 m_autoState = kDone;
