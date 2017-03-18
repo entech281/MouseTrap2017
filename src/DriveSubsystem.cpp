@@ -643,9 +643,9 @@ void DriveSubsystem::DriveManual()
     //if (m_inAutonomous && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
     //    jsY = 0.0;
     //}
-    //if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_autoDriveButton->GetBool() && (jsY < 0.0)) {
-    //    jsY = 0.0;
-    //}
+    if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_autoDriveButton->GetBool() && (jsY < 0.0)) {
+        jsY = 0.0;
+    }
     // If not in autonomous, operator is in autodrop mode, robot is still touching pin, and the gear has been dropped
     if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_pRobot->IsGearDropped()) {
         BackoffPin();
@@ -735,4 +735,7 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("JoystickLateral", m_lateralJS);
     SmartDashboard::PutNumber("JoystickX", m_joystick->GetX());
     SmartDashboard::PutNumber("JoystickY", m_joystick->GetY());
+    SmartDashboard::PutBoolean("Yaw Controller Enabled", m_yawController->IsEnabled());
+    SmartDashboard::PutBoolean("Drive HoldYaw", m_holdYaw);
+    SmartDashboard::PutNumber("Drive HoldYaw Angle", m_yawAngle);
 }
