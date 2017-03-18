@@ -562,7 +562,7 @@ void DriveSubsystem::AutonomousPeriodic()
 
 void DriveSubsystem::DriveAutomatic()
 {
-    double jsX, jsY;
+    double jsX, jsY, jsT;
 
     // In teleop trying automatic alignment with missing RPi -- back to manual
     if (!m_inAutonomous && (m_missingRPiCount > c_countUntilIgnoreRPi)) {
@@ -586,14 +586,18 @@ void DriveSubsystem::DriveAutomatic()
                 jsY = -0.15;
             }
         }
-        //if (m_pRobot->IsPinSensed() && (jsY < 0.0)) {
-        //    jsY = 0.0;
-        //}
+        if (m_pRobot->IsPinSensed() && (jsY < 0.0)) {
+            jsY = 0.0;
+        }
         jsX = m_lateralJS;
         if (m_targetsBelowMinDistance) {
             jsX = 0.0;
         }
-        m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, m_yawJStwist, 0.0);
+        jsT = 0.0;
+        if (m_holdYaw) {
+            jsT = m_yawJStwist;
+        }
+        m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, 0.0);
     }
 }
 
