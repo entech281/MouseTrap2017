@@ -62,9 +62,9 @@ const int c_opdrop_BTNid = 7;
 const int c_opautodrop_BTNid = 6;
 const int c_opshooterOn_BTNid = 3;
 const int c_opfire_BTNid = 4;
-const int c_opyawleft_BTNid = 9;
+const int c_opyawleft_BTNid = 11;
 const int c_opyawzero_BTNid = 10;
-const int c_opyawright_BTNid = 8;
+const int c_opyawright_BTNid = 9;
 
 // Digital Inputs/Outputs
 const int c_dropperSensor1 = 0;

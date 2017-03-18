@@ -4,7 +4,7 @@
 #include "DropperSubsystem.h"
 #include "RobotConstants.h"
 
-const int c_pinSensesUntilDrop = 20;
+const int c_pinSensesUntilDrop = 2;
 
 DropperSubsystem::DropperSubsystem(EntechRobot *pRobot, std::string name)
     : RobotSubsystem(pRobot, name)
@@ -166,7 +166,5 @@ bool DropperSubsystem::IsGearDropped()
 // Using a normally closed limit switch wiring can switch this
 bool DropperSubsystem::IsPinSensed(void)
 {
-   if (m_limitSwitch1->Get() && m_limitSwitch2->Get())
-      return false;
-    return true;
+   return !m_limitSwitch1->Get();
 }
