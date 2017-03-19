@@ -631,7 +631,7 @@ void DriveSubsystem::DriveDeadRecon()
 
 void DriveSubsystem::DriveManual()
 {
-    double jsX, jsY, jsT, jsAngle, gyroAngle;
+    double jsX, jsY, jsT, jsAngle, gyroAngle, deltaAngle;
 
     jsX = 0.0;
     jsY = 0.0;
@@ -678,7 +678,16 @@ void DriveSubsystem::DriveManual()
 #endif
 #if NAVX || IMU_MXP
     if (m_autoYawButton && m_autoYawButton->GetBool() && jsAngle < 360.0) {
-        SetYawDirection(jsAngle);
+        deltaAngle = fabs(GetRobotYaw() - jsAngle);
+        // If robot is facing wrong direction,
+        // don't pivot robot all the way around, drive "backwards"
+        if ((deltaAngle > 90.0) && (deltaAngle < 270.0)) {
+            jsAngle = jsAngle + 180.0;
+            if (jsAngle > 180.0) jsAngle -= 360.0;
+            SetYawDirection(jsAngle);
+        } else {
+            SetYawDirection(jsAngle);
+        }
         HoldYaw(true);
     }
 #endif
