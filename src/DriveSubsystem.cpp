@@ -651,7 +651,7 @@ void DriveSubsystem::DriveManual()
         jsY = 0.0;
     }
     // If not in autonomous, operator is in autodrop mode, robot is still touching pin, and the gear has been dropped
-    if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_pRobot->IsGearDropped()) {
+    if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
         BackoffPin();
     }
 
