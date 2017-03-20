@@ -264,7 +264,7 @@ void DriveSubsystem::BackoffPin(void)
 {
     m_dir = GetRobotYaw()*M_PI/180.0;
     m_speed = -0.25;
-    m_time = 0.20;
+    m_time = 0.5;
     m_timer->Stop();
     m_timer->Reset();
     m_timer->Start();
@@ -514,6 +514,10 @@ void DriveSubsystem::TeleopPeriodic()
         m_targetsBelowMinDistance = false;
         m_currMode = kManual;
     }
+    // If not in autonomous, operator is in autodrop mode, robot is still touching pin, and the gear has been dropped
+    if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
+        BackoffPin();
+    }
     switch (m_currMode) {
     case kManual:
         DriveManual();
@@ -650,10 +654,6 @@ void DriveSubsystem::DriveManual()
     if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_autoDriveButton->GetBool() && (jsY < 0.0)) {
         jsY = 0.0;
     }
-    // If not in autonomous, operator is in autodrop mode, robot is still touching pin, and the gear has been dropped
-    if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
-        BackoffPin();
-    }
 
     /* Rotate the robot if the trigger being held or yaw is being maintained */
     jsT = 0.0;
@@ -681,7 +681,7 @@ void DriveSubsystem::DriveManual()
         deltaAngle = fabs(GetRobotYaw() - jsAngle);
         // If robot is facing wrong direction,
         // don't pivot robot all the way around, drive "backwards"
-        if ((deltaAngle > 90.0) && (deltaAngle < 270.0)) {
+        if ((deltaAngle > 120.0) && (deltaAngle < 240.0)) {
             jsAngle = jsAngle + 180.0;
             if (jsAngle > 180.0) jsAngle -= 360.0;
             SetYawDirection(jsAngle);

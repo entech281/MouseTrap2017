@@ -35,8 +35,8 @@ const int c_jsHoldYaw_BTNid   = 10;
 const int c_jsAutoYaw_BTNid   = 2;
 
 // Operator Gamepad buttons
-#define PS4_GAMEPAD 0
-#define LOGITECH_GAMEPAD 1
+#define PS4_GAMEPAD 1
+#define LOGITECH_GAMEPAD 0
 #if PS4_GAMEPAD
 const int c_gpclimb_BTNid = 1;
 const int c_gpautodrop_BTNid = 2;
