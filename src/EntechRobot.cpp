@@ -399,7 +399,7 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget(-0.25,false);
+        m_drive->DriveToVisionTarget(-0.25,true);
         m_autoState = kWaitForDriveToTarget;
         break;
     case kWaitForDriveToTarget:
