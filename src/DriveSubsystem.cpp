@@ -21,7 +21,7 @@
 
 const int c_countUntilIgnoreRPi = 60;
 const int c_countUntilIgnoreRpiPermanently = 1000;
-const double c_minVisionDistance = 30.;
+const double c_minVisionDistance = 40.;
 const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
 const double c_velocityTolerance = 0.001;
@@ -303,7 +303,7 @@ void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
 
     // If RPi is not found, we are going to try anyway for a max number of seconds.
     if (m_inAutonomous && (m_missingRPiCount > c_countUntilIgnoreRpiPermanently)) {
-        DriveHeading(GetRobotYaw(),-speed,2.0);
+        DriveHeading(GetRobotYaw(),-speed,3.0);
     }
 }
 void DriveSubsystem::AlignWithTargetFacing(double yaw_angle, double lateral_speed)
@@ -718,6 +718,7 @@ void DriveSubsystem::DriveManual()
     SmartDashboard::PutNumber("jsY", jsY);
     SmartDashboard::PutNumber("jsT", jsT);
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
+    // m_robotDrive->TankDrive(jsY,jsY);
 }
 
 void DriveSubsystem::TestPeriodic()

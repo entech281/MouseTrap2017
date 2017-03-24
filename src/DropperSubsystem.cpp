@@ -152,7 +152,7 @@ void DropperSubsystem::SetPosition(DropperPosition position)
 
 bool DropperSubsystem::IsGearDropped()
 {
-    if ((m_mode == kAutomatic) && m_autoTriggered && (fabs(m_triggerTime - m_timer->Get()) > 0.10)) {
+    if ((m_mode == kAutomatic) && m_autoTriggered && (fabs(m_triggerTime - m_timer->Get()) > 0.20)) {
         return true;
     }
     if ((m_mode == kManual) && (m_position == kDown)) {

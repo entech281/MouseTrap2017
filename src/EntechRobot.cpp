@@ -191,8 +191,8 @@ void EntechRobot::DetermineAutonomousSetup(void)
     } else {
         // impossible
     }
-    if (m_boilerToLeft)
-        m_boilerDistance = kSiderail;
+    //if (m_boilerToLeft)
+    //    m_boilerDistance = kSiderail;
 
     // Set shooter speed based on boiler distance
     m_shooterSpeed = 0.0;

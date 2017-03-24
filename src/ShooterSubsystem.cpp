@@ -64,6 +64,7 @@ void ShooterSubsystem::RobotInit()
     m_ShooterMotor->ConfigNominalOutputVoltage(+0.0,-0.0);
     m_ShooterMotor->ConfigMaxOutputVoltage(12.0);
     m_ShooterMotor->ConfigEncoderCodesPerRev(20);
+    // m_ShooterMotor->SetInverted(true);
 
     m_ShooterMotor->SelectProfileSlot(0);
     m_ShooterMotor->SetF(0.0);
