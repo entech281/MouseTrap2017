@@ -63,8 +63,10 @@ void ShooterSubsystem::RobotInit()
     m_ShooterMotor->SetFeedbackDevice(CANTalon::QuadEncoder);
     m_ShooterMotor->ConfigNominalOutputVoltage(+0.0,-0.0);
     m_ShooterMotor->ConfigMaxOutputVoltage(12.0);
-    m_ShooterMotor->ConfigEncoderCodesPerRev(20);
+    m_ShooterMotor->ConfigEncoderCodesPerRev(20);  // actual  encoder docs say 20 pulses per channel
+    // functions to invert the motor or sensor
     // m_ShooterMotor->SetInverted(true);
+    // m_ShooterMotor->SetSensorDirection(true);
 
     m_ShooterMotor->SelectProfileSlot(0);
     m_ShooterMotor->SetF(0.0);
