@@ -91,6 +91,7 @@ private:
                      kBackupToWall, kWaitForBackupToWall,
                      kDone };
     AutoState m_autoState;
+    bool m_autoNeedsSecondTry;
     enum BoilerDistance { kNear, kMiddle, kFar, kSiderail };
     BoilerDistance m_boilerDistance;
     enum InitialTurn { kRight60, kStraight, kLeft60 };

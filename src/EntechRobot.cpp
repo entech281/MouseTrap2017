@@ -3,7 +3,7 @@
 #include "EntechRobot.h"
 #include "RobotConstants.h"
 
-#define LOG_FILE "/tmp/EntechRobotLog.csv"
+#define LOG_FILE "/home/lvuser/EntechRobotLog.csv"
 
 const double c_shooterSpeedNear = 1500.0;
 const double c_shooterSpeedMiddle = 3200.0;
@@ -44,10 +44,12 @@ EntechRobot::EntechRobot()
     , m_autoSelectionD2(NULL)
     , m_autoSelectionD3(NULL)
     , m_autoState(kStart)
+    , m_autoNeedsSecondTry(false)
     , m_boilerDistance(kMiddle)
     , m_initialTurn(kStraight)
     , m_boilerToLeft(false)
     , m_autoTimer(NULL)
+
 
     , m_prefs(NULL)
     , m_shooterSpeed(0.0)
@@ -334,6 +336,7 @@ void EntechRobot::TeleopPeriodic()
 void EntechRobot::AutonomousInit()
 {
     m_autonomousActive = true;
+    m_autoNeedsSecondTry = false;
     DetermineAutonomousSetup();
 
     if (m_autonomousActive) {
@@ -368,6 +371,8 @@ void EntechRobot::AutonomousPeriodic()
             m_autoState = kInitialDrive;
         }
         break;
+#define CLASSIC_INITIAL_TURN 0
+#if CLASSIC_INITIAL_TURN
     case kInitialDrive:
         m_drive->FieldAbsoluteDriving(true);
         m_drive->HoldYaw(true);
@@ -383,11 +388,11 @@ void EntechRobot::AutonomousPeriodic()
     case kInitialTurn:
         if (m_initialTurn == kRight60) {
             m_drive->SetYawDirection(60.0);
-            m_drive->DriveHeading(60.0, 0.25, 0.30);
+            m_drive->DriveHeading(60.0, 0.3, 0.35);
             m_drive->HoldYaw(true);
         } else if (m_initialTurn == kLeft60) {
             m_drive->SetYawDirection(-60.0);
-            m_drive->DriveHeading(-60.0, 0.25, 0.30);
+            m_drive->DriveHeading(-60.0, 0.3, 0.35);
             m_drive->HoldYaw(true);
         }
         m_autoState = kWaitForInitialTurn;
@@ -397,29 +402,72 @@ void EntechRobot::AutonomousPeriodic()
             m_autoState = kDriveToTarget;
         }
         break;
+#else
+    case kInitialDrive:
+        m_drive->FieldAbsoluteDriving(true);
+        m_drive->HoldYaw(true);
+        m_drive->SetYawDirection(0.0);
+        m_drive->DriveHeading(0.0, 0.35, 0.9);
+        m_autoState = kWaitForInitialDrive;
+        break;
+    case kWaitForInitialDrive:
+        if (m_drive->Done()) {
+            m_autoState = kInitialTurn;
+        }
+        break;
+    case kInitialTurn:
+        if (m_initialTurn == kRight60) {
+            m_drive->SetYawDirection(60.0);
+            m_drive->DriveHeading(-20.0, 0.4, 8.0);
+            m_drive->HoldYaw(true);
+        } else if (m_initialTurn == kLeft60) {
+            m_drive->SetYawDirection(-60.0);
+            m_drive->DriveHeading(20.0, 0.4, 8.0);
+            m_drive->HoldYaw(true);
+        }
+        m_autoState = kWaitForInitialTurn;
+        break;
+    case kWaitForInitialTurn:
+        if (m_drive->AreTargetsVisible()) {
+            m_drive->DriveHeading(0.0,0.0,0.0);
+            m_autoState = kDriveToTarget;
+        }
+        break;
+#endif
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget(-0.25,true);
+        m_drive->DriveToVisionTarget(-0.35,true);
         m_autoState = kWaitForDriveToTarget;
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
+        m_autoTimer->Start();
         break;
     case kWaitForDriveToTarget:
         if (m_dropper->IsPinSensed()) {
             m_drive->DriveHeading(0.0,0.0,0.0);
+            m_autoTimer->Stop();
+            m_autoTimer->Reset();
         }
         if (m_dropper->IsGearDropped()) {
+            m_autoState = kDriveBackward;
+            m_autoTimer->Stop();
+            m_autoTimer->Reset();
+        }
+        if (m_autoTimer->Get() > 4.5) {
+            m_autoNeedsSecondTry = true;
             m_autoState = kDriveBackward;
         }
         break;
     case kDriveBackward:
         switch (m_initialTurn) {
         case kLeft60:
-            m_drive->DriveHeading(120.0, 0.35, 0.90);
+            m_drive->DriveHeading(120.0, 0.35, 1.5);
             break;
         case kRight60:
-            m_drive->DriveHeading(-120.0, 0.35, 0.90);
+            m_drive->DriveHeading(-120.0, 0.35, 1.5);
             break;
         case kStraight:
-            m_drive->DriveHeading(180.0, 0.35, 0.90);
+            m_drive->DriveHeading(180.0, 0.35, 1.5);
             break;
         }
         m_autoState = kWaitForDriveBackward;
@@ -440,6 +488,10 @@ void EntechRobot::AutonomousPeriodic()
             case kStraight:
                 m_autoState = kBackupToEndWall;
                 break;
+            }
+            if (m_autoNeedsSecondTry) {
+                m_autoNeedsSecondTry = false;
+                m_autoState = kDriveToTarget;
             }
         }
         break;
@@ -466,9 +518,13 @@ void EntechRobot::AutonomousPeriodic()
     case kTurnOnShooter:
         m_shooter->SetRPM(m_shooterSpeed);
         m_autoState = kWaitForShooterToSpinup;
+        m_autoTimer->Stop();
+        m_autoTimer->Reset();
+        m_autoTimer->Start();
         break;
     case kWaitForShooterToSpinup:
-        if (m_shooter->IsAtTargetRPM()) {
+        // Give shooter a max of 2 seconds to spin up
+        if ((m_shooter->IsAtTargetRPM()) || (m_autoTimer->Get() > 2.0)) {
             m_autoState = kShootFuelLoad;
         }
         break;

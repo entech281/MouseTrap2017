@@ -4,7 +4,7 @@
 #include "ShooterSubsystem.h"
 #include "RobotConstants.h"
 
-const double c_rpmTolerance = 50.0;
+const double c_rpmTolerance = 200.0;
 const double c_rpmDeltaToActivatePID = 300.0;
 
 ShooterSubsystem::ShooterSubsystem(EntechRobot *pRobot, std::string name)
@@ -41,7 +41,8 @@ void ShooterSubsystem::SetRPM(double rpm)
 
 bool ShooterSubsystem::IsAtTargetRPM(void)
 {
-    if (fabs(m_ShooterMotor->GetSpeed() - m_rpm) < c_rpmTolerance) {
+    // if (fabs(m_ShooterMotor->GetSpeed() - m_rpm) < c_rpmTolerance) {
+    if (m_ShooterMotor->GetSpeed() > (m_rpm-c_rpmTolerance)) {
         return true;
     }
     return false;
@@ -62,7 +63,7 @@ void ShooterSubsystem::RobotInit()
     m_ShooterMotor = new CANTalon(c_ShooterMotor_CANid);
     m_ShooterMotor->SetFeedbackDevice(CANTalon::QuadEncoder);
     m_ShooterMotor->ConfigNominalOutputVoltage(+0.0,-0.0);
-    m_ShooterMotor->ConfigMaxOutputVoltage(12.0);
+    m_ShooterMotor->ConfigMaxOutputVoltage(11.5);
     m_ShooterMotor->ConfigEncoderCodesPerRev(20);  // actual  encoder docs say 20 pulses per channel
     // functions to invert the motor or sensor
     // m_ShooterMotor->SetInverted(true);
@@ -70,9 +71,9 @@ void ShooterSubsystem::RobotInit()
 
     m_ShooterMotor->SelectProfileSlot(0);
     m_ShooterMotor->SetF(0.0);
-    m_ShooterMotor->SetP(10.0);
-    m_ShooterMotor->SetI(0.05);
-    m_ShooterMotor->SetD(500.0);
+    m_ShooterMotor->SetP(5.0);
+    m_ShooterMotor->SetI(0.01);
+    m_ShooterMotor->SetD(10.0);
     m_ShooterMotor->SetAllowableClosedLoopErr(0);
 
     m_ShooterMotor->SetControlMode(CANSpeedController::kPercentVbus);

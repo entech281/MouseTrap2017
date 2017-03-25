@@ -31,6 +31,7 @@ public:
     void AlignWithTargetFacing(double yaw_angle, double lateral_speed);
     void AbortDriveToVisionTarget(void);
     bool Done(void);
+    bool AreTargetsVisible(void);
     void FieldAbsoluteDriving(bool active);
     void HoldYaw(bool active);
     void SetYawDirection(double angle);

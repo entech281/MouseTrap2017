@@ -27,7 +27,7 @@ const double c_lateralTolerence = 5.0;
 const double c_velocityTolerance = 0.001;
 
 #if NAVX || IMU_MXP
-const static double kYaw_P = 0.03;
+const static double kYaw_P = 0.02;
 const static double kYaw_I = 0.0;
 const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
@@ -227,6 +227,7 @@ void DriveSubsystem::TeleopInit()
     m_inAutonomous = false;
     m_currMode = kManual;
     m_targetsBelowMinDistance = false;
+    HoldYaw(false);
 }
 
 void DriveSubsystem::AutonomousInit()
@@ -314,6 +315,11 @@ void DriveSubsystem::AlignWithTargetFacing(double yaw_angle, double lateral_spee
     m_straffeSpeed = lateral_speed;
     m_allowStraffe = true;
     m_currMode = kAutomatic;
+}
+
+bool DriveSubsystem::AreTargetsVisible()
+{
+    return m_visionTargetsFound;
 }
 
 void DriveSubsystem::AbortDriveToVisionTarget(void)
