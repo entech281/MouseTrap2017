@@ -407,7 +407,7 @@ void EntechRobot::AutonomousPeriodic()
         m_drive->FieldAbsoluteDriving(true);
         m_drive->HoldYaw(true);
         m_drive->SetYawDirection(0.0);
-        m_drive->DriveHeading(0.0, 0.35, 0.9);
+        m_drive->DriveHeading(0.0, 0.35, 0.92);
         m_autoState = kWaitForInitialDrive;
         break;
     case kWaitForInitialDrive:
@@ -418,11 +418,11 @@ void EntechRobot::AutonomousPeriodic()
     case kInitialTurn:
         if (m_initialTurn == kRight60) {
             m_drive->SetYawDirection(60.0);
-            m_drive->DriveHeading(-20.0, 0.4, 8.0);
+            m_drive->DriveHeading(-25.0, 0.38, 8.0);
             m_drive->HoldYaw(true);
         } else if (m_initialTurn == kLeft60) {
             m_drive->SetYawDirection(-60.0);
-            m_drive->DriveHeading(20.0, 0.4, 8.0);
+            m_drive->DriveHeading(25.0, 0.38, 8.0);
             m_drive->HoldYaw(true);
         }
         m_autoState = kWaitForInitialTurn;

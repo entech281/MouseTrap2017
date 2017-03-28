@@ -27,13 +27,13 @@ const double c_lateralTolerence = 5.0;
 const double c_velocityTolerance = 0.001;
 
 #if NAVX || IMU_MXP
-const static double kYaw_P = 0.02;
-const static double kYaw_I = 0.0;
+const static double kYaw_P = 0.03;
+const static double kYaw_I = 0.0001;
 const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
 #endif
 
-const static double kLateral_P = -0.008;
+const static double kLateral_P = -0.02;
 const static double kLateral_I = 0.0;
 const static double kLateral_D = 0.0;
 const static double kLateral_TolerancePixels = 2.0;
@@ -63,6 +63,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_missingRPiCount(0)
     , m_rpi_lastseq(-1)
     , m_rpi_seq(0)
+    , m_rpi_seq_lastTargetsFound(-1)
     , m_visionTargetsFound(false)
     , m_targetsBelowMinDistance(false)
     , m_visionLateral(0.0)
@@ -228,6 +229,7 @@ void DriveSubsystem::TeleopInit()
     m_currMode = kManual;
     m_targetsBelowMinDistance = false;
     HoldYaw(false);
+    m_lateralController->Disable();
 }
 
 void DriveSubsystem::AutonomousInit()
@@ -263,7 +265,16 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 
 void DriveSubsystem::BackoffPin(void)
 {
-    m_dir = GetRobotYaw()*M_PI/180.0;
+#if NAVX || IMU_MXP
+    double yaw = GetRobotYaw();
+    if (yaw < -30.0) {
+        yaw = -60.0;
+    } else if (yaw > 30.0) {
+        yaw = 60.0;
+    } else {
+        yaw = 0.0;
+    }
+    m_dir = yaw*M_PI/180.0;
     m_speed = -0.25;
     m_time = 0.5;
     m_timer->Stop();
@@ -271,7 +282,6 @@ void DriveSubsystem::BackoffPin(void)
     m_timer->Start();
     m_currMode = kDeadRecon;
     m_allowStraffe = false;
-#if NAVX || IMU_MXP
     SetYawDirection(GetRobotYaw());
     HoldYaw(true);
 #endif
@@ -319,7 +329,17 @@ void DriveSubsystem::AlignWithTargetFacing(double yaw_angle, double lateral_spee
 
 bool DriveSubsystem::AreTargetsVisible()
 {
-    return m_visionTargetsFound;
+    // This code just returns the current frame target information
+    // return m_visionTargetsFound;
+    // This requires see vision targets in two camera frames to return true
+    if (m_visionTargetsFound) {
+        if ((m_rpi_seq_lastTargetsFound > 0) && (m_rpi_seq != m_rpi_seq_lastTargetsFound)) {
+            m_rpi_seq_lastTargetsFound = -1;  // reset in case we need this logic again
+            return true;
+        }
+        m_rpi_seq_lastTargetsFound = m_rpi_seq;
+    }
+    return false;
 }
 
 void DriveSubsystem::AbortDriveToVisionTarget(void)
@@ -523,6 +543,7 @@ void DriveSubsystem::TeleopPeriodic()
         }
         m_targetsBelowMinDistance = false;
         m_currMode = kManual;
+        m_lateralController->Disable();
     }
     // If not in autonomous, operator is in autodrop mode, robot is still touching pin, and the gear has been dropped
     if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
@@ -724,7 +745,6 @@ void DriveSubsystem::DriveManual()
     SmartDashboard::PutNumber("jsY", jsY);
     SmartDashboard::PutNumber("jsT", jsT);
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
-    // m_robotDrive->TankDrive(jsY,jsY);
 }
 
 void DriveSubsystem::TestPeriodic()
@@ -780,6 +800,7 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("JoystickX", m_joystick->GetX());
     SmartDashboard::PutNumber("JoystickY", m_joystick->GetY());
     SmartDashboard::PutBoolean("Yaw Controller Enabled", m_yawController->IsEnabled());
+    SmartDashboard::PutBoolean("Lateral Controller Enabled", m_lateralController->IsEnabled());
     SmartDashboard::PutBoolean("Drive HoldYaw", m_holdYaw);
     SmartDashboard::PutNumber("Drive HoldYaw Angle", m_yawAngle);
 }

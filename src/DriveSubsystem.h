@@ -83,6 +83,7 @@ private:
     int    m_missingRPiCount;
     int    m_rpi_lastseq;
     int    m_rpi_seq;
+    int    m_rpi_seq_lastTargetsFound;
     bool   m_visionTargetsFound;
     bool   m_targetsBelowMinDistance;
     double m_visionLateral;
