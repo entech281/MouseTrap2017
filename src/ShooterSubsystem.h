@@ -32,6 +32,8 @@ public:
     virtual void TestPeriodic();
 
 private:
+    void SetPIDController(void);
+
     CANTalon* m_ShooterMotor;
     Solenoid* m_solenoid1;
     Solenoid* m_solenoid2;
@@ -41,6 +43,9 @@ private:
     bool m_shoot;
     double m_speed;
     double m_rpm;
-    bool m_pidActive;
+    double m_pidF;
+    double m_pidP;
+    double m_pidI;
+    double m_pidD;
 };
 #endif

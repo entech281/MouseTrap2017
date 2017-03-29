@@ -5,7 +5,6 @@
 #include "RobotConstants.h"
 
 const double c_rpmTolerance = 200.0;
-const double c_rpmDeltaToActivatePID = 300.0;
 
 ShooterSubsystem::ShooterSubsystem(EntechRobot *pRobot, std::string name)
     : RobotSubsystem(pRobot, name)
@@ -16,6 +15,10 @@ ShooterSubsystem::ShooterSubsystem(EntechRobot *pRobot, std::string name)
     , m_shoot(false)
     , m_speed(0.0)
     , m_rpm(0.0)
+    , m_pidF(0.0)
+    , m_pidP(5.0)
+    , m_pidI(0.01)
+    , m_pidD(10.0)
 {
 }
 
@@ -69,16 +72,26 @@ void ShooterSubsystem::RobotInit()
     // m_ShooterMotor->SetInverted(true);
     // m_ShooterMotor->SetSensorDirection(true);
 
-    m_ShooterMotor->SelectProfileSlot(0);
-    m_ShooterMotor->SetF(0.0);
-    m_ShooterMotor->SetP(5.0);
-    m_ShooterMotor->SetI(0.01);
-    m_ShooterMotor->SetD(10.0);
-    m_ShooterMotor->SetAllowableClosedLoopErr(0);
+    SetPIDController();
 
     m_ShooterMotor->SetControlMode(CANSpeedController::kPercentVbus);
     m_solenoid1 = new Solenoid(c_compressorPCMid, c_shooterSolenoidChannel1);
     m_solenoid2 = new Solenoid(c_compressorPCMid, c_shooterSolenoidChannel2);
+}
+
+void ShooterSubsystem::SetPIDController(void)
+{
+    Preferences *prefs = frc::Preferences::GetInstance();
+    m_pidF = prefs->GetDouble("shooterF", 0.0);
+    m_pidP = prefs->GetDouble("shooterP", 5.0);
+    m_pidI = prefs->GetDouble("shooterI", 0.01);
+    m_pidD = prefs->GetDouble("shooterD", 10.0);
+    m_ShooterMotor->SelectProfileSlot(0);
+    m_ShooterMotor->SetF(m_pidF);
+    m_ShooterMotor->SetP(m_pidP);
+    m_ShooterMotor->SetI(m_pidI);
+    m_ShooterMotor->SetD(m_pidD);
+    m_ShooterMotor->SetAllowableClosedLoopErr(0);
 }
 
 void ShooterSubsystem::UpdateDashboard()
@@ -92,12 +105,13 @@ void ShooterSubsystem::UpdateDashboard()
 void ShooterSubsystem::TeleopInit()
 {
     m_ShooterMotor->SetControlMode(CANSpeedController::kPercentVbus);
-	m_shoot = false;
+    SetPIDController();
+    m_shoot = false;
 }
 
 void ShooterSubsystem::AutonomousInit()
 {
-	m_shoot = false;
+    m_shoot = false;
 }
 
 void ShooterSubsystem::TestInit()
@@ -106,7 +120,7 @@ void ShooterSubsystem::TestInit()
 
 void ShooterSubsystem::DisabledInit()
 {
-	m_shoot = false;
+    m_shoot = false;
 }
 
 void ShooterSubsystem::DisabledPeriodic()
@@ -116,7 +130,7 @@ void ShooterSubsystem::DisabledPeriodic()
 
 void ShooterSubsystem::TeleopPeriodic()
 {
-	AutonomousPeriodic();
+    AutonomousPeriodic();
 }
 
 void ShooterSubsystem::AutonomousPeriodic()
