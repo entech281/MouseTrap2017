@@ -20,6 +20,8 @@ public:
     void TriggerClose(void);
 
     virtual void UpdateDashboard(void);
+    virtual void LogHeader(FILE *fp);
+    virtual void LogData(FILE *fp);
 
     virtual void RobotInit();
     virtual void DisabledInit();

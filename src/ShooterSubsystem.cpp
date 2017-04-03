@@ -74,6 +74,9 @@ void ShooterSubsystem::RobotInit()
 
     SetPIDController();
 
+    //m_ShooterMotor->SetVelocityMeasurementPeriod(CANTalon::Period_10Ms);
+    //m_ShooterMotor->SetVelocityMeasurementWindow(64);
+
     m_ShooterMotor->SetControlMode(CANSpeedController::kPercentVbus);
     m_solenoid1 = new Solenoid(c_compressorPCMid, c_shooterSolenoidChannel1);
     m_solenoid2 = new Solenoid(c_compressorPCMid, c_shooterSolenoidChannel2);
@@ -82,10 +85,10 @@ void ShooterSubsystem::RobotInit()
 void ShooterSubsystem::SetPIDController(void)
 {
     Preferences *prefs = frc::Preferences::GetInstance();
-    m_pidF = prefs->GetDouble("shooterF", 0.0);
-    m_pidP = prefs->GetDouble("shooterP", 5.0);
-    m_pidI = prefs->GetDouble("shooterI", 0.01);
-    m_pidD = prefs->GetDouble("shooterD", 10.0);
+    m_pidF = prefs->GetDouble("shooterF", 1.55);
+    m_pidP = prefs->GetDouble("shooterP", 18.0);
+    m_pidI = prefs->GetDouble("shooterI", 0.0);
+    m_pidD = prefs->GetDouble("shooterD", 0.0);
     m_ShooterMotor->SelectProfileSlot(0);
     m_ShooterMotor->SetF(m_pidF);
     m_ShooterMotor->SetP(m_pidP);
@@ -99,7 +102,16 @@ void ShooterSubsystem::UpdateDashboard()
     SmartDashboard::PutNumber("Shooter JS Speed", m_speed);
     SmartDashboard::PutNumber("Shooter Speed", m_ShooterMotor->GetSpeed());
     SmartDashboard::PutNumber("Shooter CAN Speed", m_ShooterMotor->GetEncVel());
-    SmartDashboard::PutNumber("Shooter P", m_ShooterMotor->GetP());
+}
+
+void ShooterSubsystem::LogHeader(FILE *fp)
+{
+    fputs("ShooterRPM,",fp);
+}
+
+void ShooterSubsystem::LogData(FILE *fp)
+{
+    fprintf(fp,"%lf,",m_ShooterMotor->GetSpeed());
 }
 
 void ShooterSubsystem::TeleopInit()
