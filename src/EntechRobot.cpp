@@ -372,7 +372,7 @@ void EntechRobot::AutonomousPeriodic()
             m_drive->SetYawDirection(0.0);
             m_drive->HoldYaw(true);
             m_autoState = kDriveToTarget;
-        } else if (!m_boilerToLeft && (m_boilerDistance == kFar)) {
+        } else if (m_boilerDistance == kFar) {
             m_autoState = kTurnOnShooter;
         } else  {
             m_autoState = kInitialDrive;
@@ -413,7 +413,7 @@ void EntechRobot::AutonomousPeriodic()
     case kInitialDrive:
         m_drive->FieldAbsoluteDriving(true);
         m_drive->HoldYaw(true);
-        m_drive->SetYawDirection(0.0);
+        m_drive->SetYawDirection(InitialYaw());
         m_drive->DriveHeading(0.0, 0.35, 0.92);
         m_autoState = kWaitForInitialDrive;
         break;
