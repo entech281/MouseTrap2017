@@ -233,6 +233,13 @@ bool EntechRobot::IsInAutoDropMode(void)
     return false;
 }
 
+double EntechRobot::InitialYaw(void)
+{
+    if ((m_boilerDistance == kFar) && m_boilerToLeft)
+    	return 180.0;
+	return 0.0;
+}
+
 void EntechRobot::DisabledInit()
 {
     CloseLog();

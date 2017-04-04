@@ -21,6 +21,7 @@ public:
     bool IsGearDropped(void);
     bool IsPinSensed(void);
     bool IsInAutoDropMode(void);
+    double InitialYaw(void);
 
 protected:
     void UpdateDashboard();

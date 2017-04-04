@@ -495,13 +495,22 @@ double DriveSubsystem::GetRobotYaw(void)
 {
 #if NAVX
     if (m_ahrs)
-        return m_ahrs->GetYaw();
+        return NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
 #endif
 #if IMU_MXP
     if (m_imu)
-        return m_imu->GetYaw();
+        return NormalizeYaw(m_imu->GetYaw() - m_pRobot->InitialYaw());
 #endif
     return 0.0;
+}
+
+double DriveSubsystem::NormalizeYaw(double yaw)
+{
+	while (yaw > 180.0)
+		yaw -= 360.0;
+	while (yaw < -180.0)
+		yaw += 360.0;
+	return yaw;
 }
 
 void DriveSubsystem::TeleopPeriodic()
@@ -730,7 +739,7 @@ void DriveSubsystem::DriveManual()
         // If robot is facing wrong direction,
         // don't pivot robot all the way around, drive "backwards"
         if ((deltaAngle > 120.0) && (deltaAngle < 240.0)) {
-            jsAngle = jsAngle + 180.0;
+            jsAngle = NormalizeYaw(jsAngle + 180.0);
             if (jsAngle > 180.0) jsAngle -= 360.0;
             SetYawDirection(jsAngle);
         } else {

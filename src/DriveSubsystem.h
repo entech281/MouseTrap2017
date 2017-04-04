@@ -62,6 +62,7 @@ private:
     void DriveManual(void);
     void DriveDeadRecon(void);
     double GetRobotYaw(void);
+    double NormalizeYaw(double yaw);
 
     EntechRobot *m_pRobot;
     DriveMode m_currMode;
