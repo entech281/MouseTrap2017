@@ -21,7 +21,7 @@
 
 const int c_countUntilIgnoreRPi = 60;
 const int c_countUntilIgnoreRpiPermanently = 1000;
-const double c_minVisionDistance = 40.;
+const double c_minVisionDistance = 12.;
 const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
 const double c_velocityTolerance = 0.001;
@@ -33,8 +33,8 @@ const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
 #endif
 
-const static double kLateral_P = -0.02;
-const static double kLateral_I = 0.0;
+const static double kLateral_P = -0.09;   // 0.02 originally
+const static double kLateral_I = 0.0;    // -0.0002?
 const static double kLateral_D = 0.0;
 const static double kLateral_TolerancePixels = 2.0;
 
@@ -435,8 +435,9 @@ void DriveSubsystem::GetVisionData()
         m_missingRPiCount = 0;
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
-        m_lateralDecay = m_visionLateral/20.0;
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
+        m_visionLateral = m_visionLateral * 0.01* m_visionDistance;
+        m_lateralDecay = m_visionLateral/20.0;
         if (m_targetsBelowMinDistance || (m_visionDistance < c_minVisionDistance)) {
             m_targetsBelowMinDistance = true;
             m_lateralController->Disable();

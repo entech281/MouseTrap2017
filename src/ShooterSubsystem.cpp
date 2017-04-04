@@ -15,10 +15,10 @@ ShooterSubsystem::ShooterSubsystem(EntechRobot *pRobot, std::string name)
     , m_shoot(false)
     , m_speed(0.0)
     , m_rpm(0.0)
-    , m_pidF(0.0)
-    , m_pidP(5.0)
-    , m_pidI(0.01)
-    , m_pidD(10.0)
+    , m_pidF(1.55)
+    , m_pidP(18.0)
+    , m_pidI(0.0)
+    , m_pidD(0.0)
 {
 }
 
@@ -106,12 +106,12 @@ void ShooterSubsystem::UpdateDashboard()
 
 void ShooterSubsystem::LogHeader(FILE *fp)
 {
-    fputs("ShooterRPM,",fp);
+    fputs("ShooterRPM,Shooting,",fp);
 }
 
 void ShooterSubsystem::LogData(FILE *fp)
 {
-    fprintf(fp,"%lf,",m_ShooterMotor->GetSpeed());
+    fprintf(fp,"%lf,%d,",m_ShooterMotor->GetSpeed(),m_shoot);
 }
 
 void ShooterSubsystem::TeleopInit()
