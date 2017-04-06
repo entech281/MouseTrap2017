@@ -55,12 +55,12 @@ public:
 
 private:
     enum DriveMode { kManual, kAutomatic, kDeadRecon };
+    void DoDriveAutomatic(void);
+    void DoDriveManual(void);
+    void DoDriveDeadRecon(void);
     void BackoffPin(void);
     void SetMode(DriveMode mode);
     void GetVisionData(void);
-    void DriveAutomatic(void);
-    void DriveManual(void);
-    void DriveDeadRecon(void);
     double GetRobotYaw(void);
     double NormalizeYaw(double yaw);
 

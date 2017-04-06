@@ -22,9 +22,11 @@
 const int c_countUntilIgnoreRPi = 60;
 const int c_countUntilIgnoreRpiPermanently = 1000;
 const double c_minVisionDistance = 12.;
+const double c_slowVisionDistance = 24.0;
+const double c_slowVisionSpeed = -0.15;
 const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
-const double c_velocityTolerance = 0.001;
+const double c_stoppedVelocityTolerance = 0.001;
 
 #if NAVX || IMU_MXP
 const static double kYaw_P = 0.03;
@@ -366,7 +368,7 @@ bool DriveSubsystem::Stopped(void)
 {
 #if NAVX
     if (m_ahrs) {
-        if (fabs(m_ahrs->GetVelocityX()) < c_velocityTolerance) {
+        if (fabs(m_ahrs->GetVelocityX()) < c_stoppedVelocityTolerance) {
             return true;
         }
         return false;
@@ -504,6 +506,7 @@ double DriveSubsystem::GetRobotYaw(void)
     return 0.0;
 }
 
+// Return a yaw angle between -180 and +180
 double DriveSubsystem::NormalizeYaw(double yaw)
 {
 	while (yaw > 180.0)
@@ -521,7 +524,6 @@ void DriveSubsystem::TeleopPeriodic()
     if (m_fieldAbsoluteToggleButton->Get() == OperatorButton::kJustPressed) {
         FieldAbsoluteDriving(!m_fieldAbsolute);
     }
-#if NAVX || IMU_MXP
     if (m_holdYawToggleButton->Get() == OperatorButton::kJustPressed) {
         SetYawDirection(GetRobotYaw());
         HoldYaw(!m_holdYaw);
@@ -541,7 +543,6 @@ void DriveSubsystem::TeleopPeriodic()
     if (m_resetYawToZeroButton->Get() == OperatorButton::kJustPressed) {
         m_ahrs->ZeroYaw();
     }
-#endif
     if ((m_visionTargetsFound || m_targetsBelowMinDistance) && m_autoDriveButton->GetBool()) {
         if (m_currMode != kAutomatic) {
             DriveToVisionTarget();
@@ -559,21 +560,26 @@ void DriveSubsystem::TeleopPeriodic()
     if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
         BackoffPin();
     }
+    // If driving by deadReconing and its timer has expired --  back to manual driving
+    if ((m_currMode == kDeadRecon) && (m_timer->Get() > m_time)) {
+        m_allowStraffe = false;
+        m_currMode = kManual;
+    }
+    // In teleop trying automatic alignment with missing RPi -- back to manual driving
+    if (m_currMode == kAutomatic) && (m_missingRPiCount > c_countUntilIgnoreRPi) {
+        m_allowStraffe = false;
+        m_currMode = kManual;
+    }
+
     switch (m_currMode) {
-    case kManual:
-        DriveManual();
-        break;
     case kDeadRecon:
-        if (m_timer->Get() < m_time) {
-            DriveDeadRecon();
-        } else {
-            m_allowStraffe = false;
-            m_currMode = kManual;
-            DriveManual();
-        }
+        DoDriveDeadRecon();
+        break;
+    case kManual:
+        DoDriveManual();
         break;
     case kAutomatic:
-        DriveAutomatic();
+        DoDriveAutomatic();
         break;
     }
 }
@@ -581,16 +587,18 @@ void DriveSubsystem::TeleopPeriodic()
 void DriveSubsystem::AutonomousPeriodic()
 {
     GetVisionData();
+    if (m_missingRPiCount == 0) {
+        SmartDashboard::PutBoolean("Pi seen in Autonomous",true);
+    }
 
-    // This is autonomous -- no driver inputs
+    // If driving by deadReconing and its timer has expired, back to manual driving
+    if ((m_currMode == kDeadRecon) && (m_timer->Get() > m_time)) {
+        m_allowStraffe = false;
+        m_currMode = kManual;
+    }
     switch (m_currMode) {
     case kDeadRecon:
-        if (m_timer->Get() < m_time) {
-            DriveDeadRecon();
-        } else {
-            m_allowStraffe = false;
-            m_currMode = kManual;
-        }
+        DoDriveDeadRecon();
         break;
     case kManual:
         m_allowStraffe = false;
@@ -601,28 +609,18 @@ void DriveSubsystem::AutonomousPeriodic()
         m_robotDrive->MecanumDrive_Cartesian(0.0, 0.0, 0.0, 0.0);
         break;
     case kAutomatic:
-        DriveAutomatic();
+        DoDriveAutomatic();
         break;
-    }
-    if (m_missingRPiCount == 0) {
-        SmartDashboard::PutBoolean("Pi seen in Autonomous",true);
     }
 }
 
-void DriveSubsystem::DriveAutomatic()
+void DriveSubsystem::DoDriveAutomatic()
 {
     double jsX, jsY, jsT;
 
-    // In teleop trying automatic alignment with missing RPi -- back to manual
-    if (!m_inAutonomous && (m_missingRPiCount > c_countUntilIgnoreRPi)) {
-        m_currMode = kManual;
-        DriveManual();
-        return;
-    }
-
     if (m_pRobot->IsGearDropped() || (m_missingRPiCount > c_countUntilIgnoreRPi)) {
         m_currMode = kManual;
-        SmartDashboard::PutString("Drive Routine", "DriveAutomatic1");
+        SmartDashboard::PutString("Drive Routine", "DoDriveAutomatic1");
         SmartDashboard::PutNumber("jsX", 0.0);
         SmartDashboard::PutNumber("jsY", 0.0);
         SmartDashboard::PutNumber("jsT", 0.0);
@@ -633,10 +631,8 @@ void DriveSubsystem::DriveAutomatic()
             jsY = m_joystick->GetY();
         } else {
             jsY = m_forwardJS;
-            if ((m_visionDistance < 65.0) && (m_forwardJS < -0.2)) {
-                jsY = -0.2;
-            } else if ((m_visionDistance < 50.0) && (m_forwardJS < -0.1)) {
-                jsY = -0.15;
+            if ((m_visionDistance < c_slowVisionDistance) && (m_forwardJS < c_slowVisionSpeed)) {
+                jsY = c_slowVisionSpeed;
             }
         }
         if (m_pRobot->IsPinSensed() && (jsY < 0.0)) {
@@ -650,7 +646,7 @@ void DriveSubsystem::DriveAutomatic()
         if (m_holdYaw) {
             jsT = m_yawJStwist;
         }
-        SmartDashboard::PutString("Drive Routine", "DriveAutomatic2");
+        SmartDashboard::PutString("Drive Routine", "DoDriveAutomatic2");
         SmartDashboard::PutNumber("jsX", jsX);
         SmartDashboard::PutNumber("jsY", jsY);
         SmartDashboard::PutNumber("jsT", jsT);
@@ -658,7 +654,7 @@ void DriveSubsystem::DriveAutomatic()
     }
 }
 
-void DriveSubsystem::DriveDeadRecon()
+void DriveSubsystem::DoDriveDeadRecon()
 {
     double jsX, jsY, jsT, gyroAngle;
 
@@ -683,14 +679,14 @@ void DriveSubsystem::DriveDeadRecon()
 #endif
 
     /* Move the robot */
-    SmartDashboard::PutString("Drive Routine", "DriveDeadRecon");
+    SmartDashboard::PutString("Drive Routine", "DoDriveDeadRecon");
     SmartDashboard::PutNumber("jsX", jsX);
     SmartDashboard::PutNumber("jsY", jsY);
     SmartDashboard::PutNumber("jsT", jsT);
     m_robotDrive->MecanumDrive_Cartesian(jsX, jsY, jsT, gyroAngle);
 }
 
-void DriveSubsystem::DriveManual()
+void DriveSubsystem::DoDriveManual()
 {
     double jsX, jsY, jsT, jsAngle, gyroAngle, deltaAngle;
 
@@ -750,7 +746,7 @@ void DriveSubsystem::DriveManual()
 #endif
 
     /* Move the robot */
-    SmartDashboard::PutString("Drive Routine", "DriveManual");
+    SmartDashboard::PutString("Drive Routine", "DoDriveManual");
     SmartDashboard::PutNumber("jsX", jsX);
     SmartDashboard::PutNumber("jsY", jsY);
     SmartDashboard::PutNumber("jsT", jsT);
