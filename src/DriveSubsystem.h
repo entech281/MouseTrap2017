@@ -103,10 +103,8 @@ private:
     double m_forwardJS;
     PidInterface  *m_yawPIDInterface;
     PidInterface  *m_lateralPIDInterface;
-    PidInterface  *m_distancePIDInterface;
     PIDController *m_yawController;
     PIDController *m_lateralController;
-    PIDController *m_distanceController;
 
     frc::Timer *m_timer;
     double m_time;
@@ -115,7 +113,6 @@ private:
     double m_yawAngle;
 
     bool m_fieldAbsolute;
-    bool m_holdYaw;
 
     OperatorButton *m_fieldAbsoluteToggleButton;
     OperatorButton *m_holdYawToggleButton;

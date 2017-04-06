@@ -28,22 +28,15 @@ const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
 const double c_stoppedVelocityTolerance = 0.001;
 
-#if NAVX || IMU_MXP
 const static double kYaw_P = 0.03;
 const static double kYaw_I = 0.0001;
 const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
-#endif
 
 const static double kLateral_P = -0.09;   // 0.02 originally
 const static double kLateral_I = 0.0;    // -0.0002?
 const static double kLateral_D = 0.0;
 const static double kLateral_TolerancePixels = 2.0;
-
-const static double kDistance_P = 0.03;
-const static double kDistance_I = 0.0;
-const static double kDistance_D = 0.0;
-const static double kDistance_TolerancePixels = 2.0;
 
 DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     : RobotSubsystem(pRobot, name)
@@ -79,10 +72,8 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_forwardJS(0.0)
     , m_yawPIDInterface(NULL)
     , m_lateralPIDInterface(NULL)
-    , m_distancePIDInterface(NULL)
     , m_yawController(NULL)
     , m_lateralController(NULL)
-    , m_distanceController(NULL)
 
     , m_timer(NULL)
     , m_time(0.0)
@@ -91,7 +82,6 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_yawAngle(0.0)
 
     , m_fieldAbsolute(true)
-    , m_holdYaw(false)
 
     , m_fieldAbsoluteToggleButton(NULL)
     , m_holdYawToggleButton(NULL)
@@ -151,10 +141,10 @@ void DriveSubsystem::RobotInit()
     m_robotDrive = new frc::RobotDrive(m_flmotor, m_rlmotor, m_frmotor, m_rrmotor);
     m_robotDrive->SetSafetyEnabled(false);
 
- //   m_flmotor->SetControlMode(CANSpeedController::kPercentVbus);
- //   m_frmotor->SetControlMode(CANSpeedController::kPercentVbus);
- //   m_rlmotor->SetControlMode(CANSpeedController::kPercentVbus);
- //   m_rrmotor->SetControlMode(CANSpeedController::kPercentVbus);
+//    m_flmotor->SetControlMode(CANSpeedController::kPercentVbus);
+//    m_frmotor->SetControlMode(CANSpeedController::kPercentVbus);
+//    m_rlmotor->SetControlMode(CANSpeedController::kPercentVbus);
+//    m_rrmotor->SetControlMode(CANSpeedController::kPercentVbus);
 
     m_robotDrive->SetInvertedMotor(frc::RobotDrive::kFrontLeftMotor , c_kflmotor_inverted);
     m_robotDrive->SetInvertedMotor(frc::RobotDrive::kRearLeftMotor  , c_krlmotor_inverted);
@@ -169,7 +159,6 @@ void DriveSubsystem::RobotInit()
     m_yawPIDInterface = new PidInterface(m_imu, &m_yawJStwist);
 #endif
     m_lateralPIDInterface = new PidInterface(&m_visionLateral, &m_lateralJS);
-    m_distancePIDInterface = new PidInterface(&m_visionDistance, &m_forwardJS);
 
 #if NAVX || IMU_MXP
     m_yawController = new frc::PIDController(kYaw_P, kYaw_I, kYaw_D, m_yawPIDInterface, m_yawPIDInterface);
@@ -186,13 +175,6 @@ void DriveSubsystem::RobotInit()
     m_lateralController->SetContinuous(false);
     m_lateralController->SetOutputRange(-1.0, 1.0);
     m_lateralController->Disable();
-
-    m_distanceController = new frc::PIDController(kDistance_P, kDistance_I, kDistance_D, m_distancePIDInterface, m_distancePIDInterface);
-    m_distanceController->SetAbsoluteTolerance(kDistance_TolerancePixels);
-    m_distanceController->SetInputRange(0.0, 100.0);
-    m_distanceController->SetContinuous(false);
-    m_distanceController->SetOutputRange(0.25, 0.5);
-    m_distanceController->Disable();
 
     m_timer = new frc::Timer();
 
@@ -267,7 +249,6 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 
 void DriveSubsystem::BackoffPin(void)
 {
-#if NAVX || IMU_MXP
     double yaw = GetRobotYaw();
     if (yaw < -30.0) {
         yaw = -60.0;
@@ -286,7 +267,6 @@ void DriveSubsystem::BackoffPin(void)
     m_allowStraffe = false;
     SetYawDirection(GetRobotYaw());
     HoldYaw(true);
-#endif
 }
 
 void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
@@ -308,8 +288,6 @@ void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
     m_lateralController->SetSetpoint(0.0);
     m_lateralController->Enable();
     m_forwardJS = speed;
-    // m_distanceController->SetSetpoint(0.0);
-    // m_distanceController->Enable();
 
     m_allowStraffe = false;
     m_currMode = kAutomatic;
@@ -346,12 +324,10 @@ bool DriveSubsystem::AreTargetsVisible()
 
 void DriveSubsystem::AbortDriveToVisionTarget(void)
 {
-#if NAVX || IMU_MXP
-    if (!m_holdYaw)
+    if (m_yawController)
         m_yawController->Disable();
-#endif
-    m_lateralController->Disable();
-    // m_distanceController->Disable();
+    if (m_lateralController)
+        m_lateralController->Disable();
     m_currMode = kManual;
     m_straffeSpeed = 0.0;
     m_targetsBelowMinDistance = false;
@@ -384,16 +360,13 @@ void DriveSubsystem::FieldAbsoluteDriving(bool active)
 
 void DriveSubsystem::HoldYaw(bool active)
 {
-    m_holdYaw = active;
-#if NAVX || IMU_MXP
     if (m_yawController) {
-        if (m_holdYaw) {
+        if (active) {
             m_yawController->Enable();
         } else {
             m_yawController->Disable();
         }
     }
-#endif
 }
 
 void DriveSubsystem::SetYawDirection(double angle)
@@ -526,7 +499,8 @@ void DriveSubsystem::TeleopPeriodic()
     }
     if (m_holdYawToggleButton->Get() == OperatorButton::kJustPressed) {
         SetYawDirection(GetRobotYaw());
-        HoldYaw(!m_holdYaw);
+        if (m_yawController)
+            HoldYaw(!m_yawController->IsEnabled());
     }
     if (m_yawToP60Button->Get() == OperatorButton::kJustPressed) {
         SetYawDirection(60.0);
@@ -543,7 +517,7 @@ void DriveSubsystem::TeleopPeriodic()
     if (m_resetYawToZeroButton->Get() == OperatorButton::kJustPressed) {
         m_ahrs->ZeroYaw();
     }
-    if ((m_visionTargetsFound || m_targetsBelowMinDistance) && m_autoDriveButton->GetBool()) {
+    if (m_autoDriveButton->GetBool() && (m_visionTargetsFound || m_targetsBelowMinDistance)) {
         if (m_currMode != kAutomatic) {
             DriveToVisionTarget();
         }
@@ -556,30 +530,30 @@ void DriveSubsystem::TeleopPeriodic()
         m_currMode = kManual;
         m_lateralController->Disable();
     }
-    // If not in autonomous, operator is in autodrop mode, robot is still touching pin, and the gear has been dropped
-    if (!m_inAutonomous && m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
+
+    // If operator is in autodrop mode and the gear has been dropped backup until operator lets go
+    if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
         BackoffPin();
     }
-    // If driving by deadReconing and its timer has expired --  back to manual driving
-    if ((m_currMode == kDeadRecon) && (m_timer->Get() > m_time)) {
-        m_allowStraffe = false;
-        m_currMode = kManual;
-    }
-    // In teleop trying automatic alignment with missing RPi -- back to manual driving
-    if (m_currMode == kAutomatic) && (m_missingRPiCount > c_countUntilIgnoreRPi) {
-        m_allowStraffe = false;
-        m_currMode = kManual;
-    }
-
     switch (m_currMode) {
     case kDeadRecon:
         DoDriveDeadRecon();
+        // If timer has expired --  back to manual driving
+        if (m_timer->Get() > m_time) {
+            m_allowStraffe = false;
+            m_currMode = kManual;
+        }
         break;
     case kManual:
         DoDriveManual();
         break;
     case kAutomatic:
         DoDriveAutomatic();
+        // If trying automatic alignment with missing RPi -- back to manual driving
+        if (m_missingRPiCount > c_countUntilIgnoreRPi) {
+            m_allowStraffe = false;
+            m_currMode = kManual;
+        }
         break;
     }
 }
@@ -591,14 +565,14 @@ void DriveSubsystem::AutonomousPeriodic()
         SmartDashboard::PutBoolean("Pi seen in Autonomous",true);
     }
 
-    // If driving by deadReconing and its timer has expired, back to manual driving
-    if ((m_currMode == kDeadRecon) && (m_timer->Get() > m_time)) {
-        m_allowStraffe = false;
-        m_currMode = kManual;
-    }
     switch (m_currMode) {
     case kDeadRecon:
         DoDriveDeadRecon();
+        // If timer has expired, back to manual driving
+        if (m_timer->Get() > m_time) {
+            m_allowStraffe = false;
+            m_currMode = kManual;
+        }
         break;
     case kManual:
         m_allowStraffe = false;
@@ -643,7 +617,7 @@ void DriveSubsystem::DoDriveAutomatic()
             jsX = 0.0;
         }
         jsT = 0.0;
-        if (m_holdYaw) {
+        if (m_yawController && m_yawController->IsEnabled()) {
             jsT = m_yawJStwist;
         }
         SmartDashboard::PutString("Drive Routine", "DoDriveAutomatic2");
@@ -663,7 +637,7 @@ void DriveSubsystem::DoDriveDeadRecon()
 
     /* Rotate the robot if the trigger being held or yaw is being maintained */
     jsT = 0.0;
-    if (m_holdYaw) {
+    if (m_yawController && m_yawController->IsEnabled()) {
         jsT = m_yawJStwist;
     }
     gyroAngle = 0.0;
@@ -701,16 +675,13 @@ void DriveSubsystem::DoDriveManual()
         }
     }
     // If auto drive had dropped out because RPi not found, we still enforce no forward motion
-    //if (m_inAutonomous && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
-    //    jsY = 0.0;
-    //}
-    if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && m_autoDriveButton->GetBool() && (jsY < 0.0)) {
+    if (m_autoDriveButton->GetBool() && m_pRobot->IsInAutoDropMode() && m_pRobot->IsPinSensed() && (jsY < 0.0)) {
         jsY = 0.0;
     }
 
     /* Rotate the robot if the trigger being held or yaw is being maintained */
     jsT = 0.0;
-    if (m_holdYaw) {
+    if (m_yawController && m_yawController->IsEnabled()) {
         jsT = m_yawJStwist;
     }
     if (m_joystick->GetTrigger()) {
@@ -729,21 +700,18 @@ void DriveSubsystem::DoDriveManual()
         gyroAngle = m_imu->GetAngle();
     }
 #endif
-#if NAVX || IMU_MXP
     if (m_autoYawButton && m_autoYawButton->GetBool() && jsAngle < 360.0) {
         deltaAngle = fabs(GetRobotYaw() - jsAngle);
         // If robot is facing wrong direction,
         // don't pivot robot all the way around, drive "backwards"
         if ((deltaAngle > 120.0) && (deltaAngle < 240.0)) {
             jsAngle = NormalizeYaw(jsAngle + 180.0);
-            if (jsAngle > 180.0) jsAngle -= 360.0;
             SetYawDirection(jsAngle);
         } else {
             SetYawDirection(jsAngle);
         }
         HoldYaw(true);
     }
-#endif
 
     /* Move the robot */
     SmartDashboard::PutString("Drive Routine", "DoDriveManual");
@@ -807,6 +775,5 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("JoystickY", m_joystick->GetY());
     SmartDashboard::PutBoolean("Yaw Controller Enabled", m_yawController->IsEnabled());
     SmartDashboard::PutBoolean("Lateral Controller Enabled", m_lateralController->IsEnabled());
-    SmartDashboard::PutBoolean("Drive HoldYaw", m_holdYaw);
     SmartDashboard::PutNumber("Drive HoldYaw Angle", m_yawAngle);
 }
