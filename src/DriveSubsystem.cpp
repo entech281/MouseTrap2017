@@ -404,17 +404,24 @@ bool DriveSubsystem::IsAlignmentCorrect(void)
 
 void DriveSubsystem::GetVisionData()
 {
+    //static Timer rpi_timer;
+
     m_ntTable = NetworkTable::GetTable(POSITION_TABLE);
     m_ntTable->PutBoolean(RIO_ALIVE_KEY,true);
     m_rpi_seq = m_ntTable->GetNumber(RPI_SEQUENCE,m_rpi_lastseq);
     if (m_rpi_seq != m_rpi_lastseq) {
+        //SmartDashboard::PutNumber("RPi Timer", rpi_timer.Get());
+        //SmartDashboard::PutNumber("RPi Seq", m_rpi_seq);
+        //rpi_timer.Stop();
+        //rpi_timer.Reset();
+        //rpi_timer.Start();
         m_missingRPiCount = 0;
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
         //  Convert to real units based on camera 62.2deg field of view
         //  LateralDist = Distance * sin(62.2/2) * (m_visionLateral/100)
-        m_visionLateral = 0.01 * m_visionLateral * 0.516 * m_visionDistance;
+        // m_visionLateral = 0.01 * m_visionLateral * 0.516 * m_visionDistance;
         m_lateralDecay = m_visionLateral/20.0;
         if (m_targetsBelowMinDistance || (m_visionDistance < c_minVisionDistance)) {
             m_targetsBelowMinDistance = true;

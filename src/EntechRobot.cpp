@@ -55,6 +55,8 @@ EntechRobot::EntechRobot()
     , m_shooterSpeed(0.0)
 {
     m_robotSubsystems.clear();
+    NetworkTable::SetServerMode();
+    NetworkTable::SetUpdateRate(0.01);
 }
 
 EntechRobot::~EntechRobot() {}
@@ -94,8 +96,6 @@ void EntechRobot::CloseLog(void)
 
 void EntechRobot::RobotInit()
 {
-    NetworkTable::SetServerMode();
-    NetworkTable::SetUpdateRate(0.02);
     m_lw = frc::LiveWindow::GetInstance();
     m_drive = new DriveSubsystem(this,"drive");
     m_climber = new ClimberSubsystem(this, "climber");
