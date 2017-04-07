@@ -33,7 +33,8 @@ const static double kYaw_I = 0.0001;
 const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
 
-const static double kLateral_P = -0.09;   // 0.02 originally
+// before real units:  const static double kLateral_P = -0.09;   // 0.02 originally
+const static double kLateral_P = -2.0;   // 0.02 originally
 const static double kLateral_I = 0.0;    // -0.0002?
 const static double kLateral_D = 0.0;
 const static double kLateral_TolerancePixels = 2.0;
@@ -411,7 +412,9 @@ void DriveSubsystem::GetVisionData()
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
-        m_visionLateral = m_visionLateral * 0.01* m_visionDistance;
+        //  Convert to real units based on camera 62.2deg field of view
+        //  LateralDist = Distance * sin(62.2/2) * (m_visionLateral/100)
+        m_visionLateral = 0.01 * m_visionLateral * 0.516 * m_visionDistance;
         m_lateralDecay = m_visionLateral/20.0;
         if (m_targetsBelowMinDistance || (m_visionDistance < c_minVisionDistance)) {
             m_targetsBelowMinDistance = true;
