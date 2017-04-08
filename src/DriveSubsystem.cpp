@@ -34,10 +34,10 @@ const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
 
 // before real units:  const static double kLateral_P = -0.09;   // 0.02 originally
-const static double kLateral_P = -2.0;   // 0.02 originally
+const static double kLateral_P = -0.1;   // 0.02 originally
 const static double kLateral_I = 0.0;    // -0.0002?
 const static double kLateral_D = 0.0;
-const static double kLateral_TolerancePixels = 2.0;
+const static double kLateral_Tolerance = 2.0;
 
 DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     : RobotSubsystem(pRobot, name)
@@ -77,10 +77,13 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_lateralController(NULL)
 
     , m_timer(NULL)
+    , m_vTimer(NULL)
+    , m_vTimerRunning(false)
     , m_time(0.0)
     , m_speed(0.0)
     , m_dir(0.0)
     , m_yawAngle(0.0)
+    , m_currentYawAngle(0.0)
 
     , m_fieldAbsolute(true)
 
@@ -154,7 +157,7 @@ void DriveSubsystem::RobotInit()
 
     // PID Controllers
 #if NAVX
-    m_yawPIDInterface = new PidInterface(m_ahrs, &m_yawJStwist);
+    m_yawPIDInterface = new PidInterface(&m_currentYawAngle, &m_yawJStwist);
 #endif
 #if IMU_MXP
     m_yawPIDInterface = new PidInterface(m_imu, &m_yawJStwist);
@@ -171,13 +174,14 @@ void DriveSubsystem::RobotInit()
 #endif
 
     m_lateralController = new frc::PIDController(kLateral_P, kLateral_I, kLateral_D, m_lateralPIDInterface, m_lateralPIDInterface);
-    m_lateralController->SetAbsoluteTolerance(kLateral_TolerancePixels);
+    m_lateralController->SetAbsoluteTolerance(kLateral_Tolerance);
     m_lateralController->SetInputRange(-100.0, 100.0);
     m_lateralController->SetContinuous(false);
     m_lateralController->SetOutputRange(-1.0, 1.0);
     m_lateralController->Disable();
 
     m_timer = new frc::Timer();
+    m_vTimer = new frc::Timer();
 
     // Driver interface on Driver joystick buttons
     m_joystick = new Joystick(c_driverJSid);
@@ -198,6 +202,7 @@ void DriveSubsystem::RobotInit()
         }
         m_ahrs->ZeroYaw();
     }
+    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
 #endif
 }
 
@@ -224,6 +229,7 @@ void DriveSubsystem::AutonomousInit()
     m_targetsBelowMinDistance = false;
 #if NAVX
     m_ahrs->ZeroYaw();
+    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
 #endif
     SmartDashboard::PutBoolean("Pi seen in Autonomous",false);
 }
@@ -312,13 +318,22 @@ bool DriveSubsystem::AreTargetsVisible()
 {
     // This code just returns the current frame target information
     // return m_visionTargetsFound;
-    // This requires see vision targets in two camera frames to return true
+    // This requires see vision targets in view for 1 second
     if (m_visionTargetsFound) {
-        if ((m_rpi_seq_lastTargetsFound > 0) && (m_rpi_seq != m_rpi_seq_lastTargetsFound)) {
-            m_rpi_seq_lastTargetsFound = -1;  // reset in case we need this logic again
+        if (!m_vTimerRunning) {
+            m_vTimerRunning = true;
+            m_vTimer->Stop();
+            m_vTimer->Reset();
+            m_vTimer->Start();
+        }
+        if (m_vTimerRunning && (m_vTimer->Get() > 1.0)) {
+            m_vTimer->Stop();
+            m_vTimerRunning = false;
             return true;
         }
-        m_rpi_seq_lastTargetsFound = m_rpi_seq;
+    } else {
+        m_vTimer->Stop();
+        m_vTimerRunning = false;
     }
     return false;
 }
@@ -478,6 +493,7 @@ void DriveSubsystem::GetVisionData()
 void DriveSubsystem::DisabledPeriodic()
 {
     GetVisionData();
+    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
     SmartDashboard::PutString("Drive Routine", "DisabledPeriodic");
     SmartDashboard::PutNumber("jsX", 0.0);
     SmartDashboard::PutNumber("jsY", 0.0);
@@ -511,6 +527,7 @@ double DriveSubsystem::NormalizeYaw(double yaw)
 void DriveSubsystem::TeleopPeriodic()
 {
     GetVisionData();
+    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
 
     // This is teleop, so manage driver inputs here
     if (m_fieldAbsoluteToggleButton->Get() == OperatorButton::kJustPressed) {
@@ -580,6 +597,7 @@ void DriveSubsystem::TeleopPeriodic()
 void DriveSubsystem::AutonomousPeriodic()
 {
     GetVisionData();
+    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
     if (m_missingRPiCount == 0) {
         SmartDashboard::PutBoolean("Pi seen in Autonomous",true);
     }
@@ -662,7 +680,7 @@ void DriveSubsystem::DoDriveDeadRecon()
     gyroAngle = 0.0;
 #if NAVX
     if (m_fieldAbsolute && m_ahrs) {
-        gyroAngle = m_ahrs->GetAngle();
+        gyroAngle = GetRobotYaw();
     }
 #endif
 #if IMU_MXP
@@ -711,7 +729,7 @@ void DriveSubsystem::DoDriveManual()
     gyroAngle = 0.0;
 #if NAVX
     if (m_fieldAbsolute && m_ahrs) {
-        gyroAngle = m_ahrs->GetAngle();
+        gyroAngle = GetRobotYaw();
     }
 #endif
 #if IMU_MXP
@@ -793,6 +811,7 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("JoystickX", m_joystick->GetX());
     SmartDashboard::PutNumber("JoystickY", m_joystick->GetY());
     SmartDashboard::PutBoolean("Yaw Controller Enabled", m_yawController->IsEnabled());
+    SmartDashboard::PutNumber("Robot Yaw2", GetRobotYaw());
     SmartDashboard::PutBoolean("Lateral Controller Enabled", m_lateralController->IsEnabled());
     SmartDashboard::PutNumber("Drive HoldYaw Angle", m_yawAngle);
 }

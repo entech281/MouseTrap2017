@@ -107,10 +107,13 @@ private:
     PIDController *m_lateralController;
 
     frc::Timer *m_timer;
+    frc::Timer *m_vTimer;
+    bool m_vTimerRunning;
     double m_time;
     double m_speed;
     double m_dir;
     double m_yawAngle;
+    double m_currentYawAngle;
 
     bool m_fieldAbsolute;
 

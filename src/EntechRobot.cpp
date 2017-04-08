@@ -365,6 +365,12 @@ void EntechRobot::AutonomousInit()
 
 void EntechRobot::AutonomousPeriodic()
 {
+    double dropTimeout;
+
+    dropTimeout = 4.5;
+    if (m_initialTurn == kStraight) {
+        dropTimeout = 6.0;
+    }
     switch(m_autoState) {
     case kStart:
         // gear first -- if in middle
@@ -443,7 +449,7 @@ void EntechRobot::AutonomousPeriodic()
 #endif
     case kDriveToTarget:
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
-        m_drive->DriveToVisionTarget(-0.35,true);
+        m_drive->DriveToVisionTarget(-0.22,true);
         m_autoState = kWaitForDriveToTarget;
         m_autoTimer->Stop();
         m_autoTimer->Reset();
@@ -460,7 +466,7 @@ void EntechRobot::AutonomousPeriodic()
             m_autoTimer->Stop();
             m_autoTimer->Reset();
         }
-        if (m_autoTimer->Get() > 4.5) {
+        if (m_autoTimer->Get() > dropTimeout) {
             m_autoNeedsSecondTry = true;
             m_autoState = kDriveBackward;
         }
@@ -474,7 +480,7 @@ void EntechRobot::AutonomousPeriodic()
             m_drive->DriveHeading(-120.0, 0.35, 1.5);
             break;
         case kStraight:
-            m_drive->DriveHeading(180.0, 0.35, 1.5);
+            m_drive->DriveHeading(180.0, 0.35, 0.7);
             break;
         }
         m_autoState = kWaitForDriveBackward;
@@ -511,7 +517,7 @@ void EntechRobot::AutonomousPeriodic()
             m_drive->HoldYaw(true);
         }
         m_shooter->SetRPM(m_shooterSpeed);
-        m_drive->DriveHeading(180.0,0.4,3.0);
+        m_drive->DriveHeading(180.0,0.2,3.0);
         m_autoTimer->Stop();
         m_autoTimer->Reset();
         m_autoTimer->Start();
@@ -577,10 +583,10 @@ void EntechRobot::AutonomousPeriodic()
         switch (m_initialTurn) {
         case kLeft60:
         case kRight60:
-            m_drive->DriveHeading(0.0, 0.70, 3.0);
+            m_drive->DriveHeading(0.0, 0.60, 3.0);
             break;
         case kStraight:
-            m_drive->DriveHeading(0.0, 0.70, 3.5);
+            m_drive->DriveHeading(0.0, 0.60, 3.5);
             break;
         }
         m_autoState = kWaitForDriveForward;
