@@ -405,6 +405,7 @@ bool DriveSubsystem::IsAlignmentCorrect(void)
 void DriveSubsystem::GetVisionData()
 {
     //static Timer rpi_timer;
+	bool last_visionTargetsFound;
 
     m_ntTable = NetworkTable::GetTable(POSITION_TABLE);
     m_ntTable->PutBoolean(RIO_ALIVE_KEY,true);
@@ -416,6 +417,7 @@ void DriveSubsystem::GetVisionData()
         //rpi_timer.Reset();
         //rpi_timer.Start();
         m_missingRPiCount = 0;
+        last_visionTargetsFound = m_visionTargetsFound;
         m_visionTargetsFound = m_ntTable->GetBoolean(FOUND_KEY,false);
         m_visionLateral = m_ntTable->GetNumber(DIRECTION_KEY,0.0);
         m_visionDistance = m_ntTable->GetNumber(DISTANCE_KEY,100.0);
@@ -423,8 +425,15 @@ void DriveSubsystem::GetVisionData()
         //  LateralDist = Distance * sin(62.2/2) * (m_visionLateral/100)
         // m_visionLateral = 0.01 * m_visionLateral * 0.516 * m_visionDistance;
         m_lateralDecay = m_visionLateral/20.0;
-        if (m_targetsBelowMinDistance || (m_visionDistance < c_minVisionDistance)) {
-            m_targetsBelowMinDistance = true;
+        // we check for min distance BEFORE we lose it off the bottom
+        if (last_visionTargetsFound && m_visionTargetsFound) {
+        	if (m_visionDistance < c_minVisionDistance) {
+                m_targetsBelowMinDistance = true;
+            } else {
+                m_targetsBelowMinDistance = false;
+            }
+        }
+        if (m_targetsBelowMinDistance) {
             m_lateralController->Disable();
             m_lateralJS = 0.0;
         } else {
@@ -738,14 +747,14 @@ void DriveSubsystem::TestPeriodic()
 
 void DriveSubsystem::LogHeader(FILE *fp)
 {
-    fputs("rpi_seq,missingRPiCount,vTargetsFound,TargetsBelowMin,vLateral,vDist,rawFwdJS,rawLatJS,rawYawJS,",fp);
+    fputs("rpi_seq,missingRPiCount,vTargetsFound,TargetsBelowMin,vLateral,vDist,rawFwdJS,rawLatJS,rawYawJS,yaw_angle,gyroYaw,",fp);
 }
 
 void DriveSubsystem::LogData(FILE *fp)
 {
-    fprintf(fp,"%d,%d,%d,%d,%lf,%lf,%lf,%lf,%lf,",m_rpi_seq,m_missingRPiCount,
+    fprintf(fp,"%d,%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,",m_rpi_seq,m_missingRPiCount,
             m_visionTargetsFound,m_targetsBelowMinDistance,m_visionLateral,m_visionDistance,
-            m_forwardJS,m_lateralJS,m_yawJStwist);
+            m_forwardJS,m_lateralJS,m_yawJStwist,m_yawAngle,m_ahrs->GetYaw());
 }
 
 void DriveSubsystem::UpdateDashboard(void)
