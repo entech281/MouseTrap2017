@@ -25,7 +25,6 @@ const bool c_krrmotor_inverted = true;
 
 // Driver Joystick buttons
 const int c_jsautodrive_BTNid     = 11;
-const int c_climbMode_BTNid   = 3;
 const int c_jsYawReset_BTNid  = 5;
 const int c_jsfieldAbs_BTNid  = 6;
 const int c_jsYawToP60_BTNid  = 7;
@@ -33,6 +32,8 @@ const int c_jsYawToM60_BTNid  = 8;
 const int c_jsYawToZero_BTNid = 9;
 const int c_jsHoldYaw_BTNid   = 10;
 const int c_jsAutoYaw_BTNid   = 2;
+const int c_jsNudgeLeft_BTNid  = 3;
+const int c_jsNudgeRight_BTNid = 4;
 
 // Operator Gamepad buttons
 #define PS4_GAMEPAD 1

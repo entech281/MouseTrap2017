@@ -125,5 +125,7 @@ private:
     OperatorButton *m_resetYawToZeroButton;
     OperatorButton *m_autoDriveButton;
     OperatorButton *m_autoYawButton;
+    OperatorButton *m_nudgeLeftButton;
+    OperatorButton *m_nudgeRightButton;
 };
 #endif

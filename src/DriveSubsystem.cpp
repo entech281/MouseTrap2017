@@ -33,10 +33,9 @@ const static double kYaw_I = 0.0001;
 const static double kYaw_D = 0.0;
 const static double kYaw_ToleranceDegrees = 2.0;
 
-// before real units:  const static double kLateral_P = -0.09;   // 0.02 originally
-const static double kLateral_P = -0.1;   // 0.02 originally
-const static double kLateral_I = 0.0;    // -0.0002?
-const static double kLateral_D = 0.0;
+const static double kLateral_P = -0.1;
+const static double kLateral_I =  0.0;
+const static double kLateral_D = -0.2;
 const static double kLateral_Tolerance = 2.0;
 
 DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
@@ -95,6 +94,8 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_resetYawToZeroButton(NULL)
     , m_autoDriveButton(NULL)
     , m_autoYawButton(NULL)
+    , m_nudgeLeftButton(NULL)
+    , m_nudgeRightButton(NULL)
 {
 }
 
@@ -193,6 +194,8 @@ void DriveSubsystem::RobotInit()
     m_resetYawToZeroButton  = new OperatorButton(m_joystick, c_jsYawReset_BTNid);
     m_autoDriveButton = new OperatorButton(m_joystick, c_jsautodrive_BTNid);
     m_autoYawButton = new OperatorButton(m_joystick, c_jsAutoYaw_BTNid);
+    m_nudgeLeftButton = new OperatorButton(m_joystick, c_jsNudgeLeft_BTNid);
+    m_nudgeRightButton = new OperatorButton(m_joystick, c_jsNudgeRight_BTNid);
 
     // OK make sure the NavX has finished calibrating
 #if NAVX
@@ -552,6 +555,14 @@ void DriveSubsystem::TeleopPeriodic()
     }
     if (m_resetYawToZeroButton->Get() == OperatorButton::kJustPressed) {
         m_ahrs->ZeroYaw();
+    }
+    if (m_nudgeLeftButton->Get() == OperatorButton::kJustPressed) {
+        SetYawDirection(-135.0);
+        HoldYaw(true);
+    }
+    if (m_nudgeRightButton->Get() == OperatorButton::kJustPressed) {
+        SetYawDirection(135.0);
+        HoldYaw(true);
     }
     if (m_autoDriveButton->GetBool() && (m_visionTargetsFound || m_targetsBelowMinDistance)) {
         if (m_currMode != kAutomatic) {
