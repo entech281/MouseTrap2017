@@ -27,6 +27,8 @@ const double c_slowVisionSpeed = -0.15;
 const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
 const double c_stoppedVelocityTolerance = 0.001;
+const double c_nudgeSpeed = 0.2;
+const double c_nudgeTime = 0.05;
 
 const static double kYaw_P = 0.03;
 const static double kYaw_I = 0.0001;
@@ -255,6 +257,20 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
     m_timer->Start();
     m_currMode = kDeadRecon;
     m_allowStraffe = false;
+}
+
+void DriveSubsystem::NudgeLeft(void)
+{
+    double yaw = GetRobotYaw();
+    m_lateralController->Disable();
+    DriveHeading(yaw-90.0, c_nudgeSpeed, c_nudgeTime);
+}
+
+void DriveSubsystem::NudgeRight(void)
+{
+    double yaw = GetRobotYaw();
+    m_lateralController->Disable();
+    DriveHeading(yaw+90.0, c_nudgeSpeed, c_nudgeTime);
 }
 
 void DriveSubsystem::BackoffPin(void)
@@ -557,12 +573,10 @@ void DriveSubsystem::TeleopPeriodic()
         m_ahrs->ZeroYaw();
     }
     if (m_nudgeLeftButton->Get() == OperatorButton::kJustPressed) {
-        SetYawDirection(-135.0);
-        HoldYaw(true);
+        NudgeLeft();
     }
     if (m_nudgeRightButton->Get() == OperatorButton::kJustPressed) {
-        SetYawDirection(135.0);
-        HoldYaw(true);
+        NudgeRight();
     }
     if (m_autoDriveButton->GetBool() && (m_visionTargetsFound || m_targetsBelowMinDistance)) {
         if (m_currMode != kAutomatic) {

@@ -30,6 +30,8 @@ public:
     void DriveToVisionTarget(double speed = 10.0, bool auto_yaw = true);
     void AlignWithTargetFacing(double yaw_angle, double lateral_speed);
     void AbortDriveToVisionTarget(void);
+    void NudgeLeft(void);
+    void NudgeRight(void);
     bool Done(void);
     bool AreTargetsVisible(void);
     void FieldAbsoluteDriving(bool active);
