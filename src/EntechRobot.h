@@ -72,6 +72,9 @@ private:
 
     std::list<RobotSubsystem*> m_robotSubsystems;
 
+    enum AutoDropState { kDropOff, kDropWaitForGearRelease, kDropBackoff, kDropRaise, kDropForward };
+    AutoDropState m_dropState;
+
     bool m_autonomousActive;
     frc::DigitalInput *m_autoSelectionD1;
     frc::DigitalInput *m_autoSelectionD2;

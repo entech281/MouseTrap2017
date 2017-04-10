@@ -39,6 +39,8 @@ EntechRobot::EntechRobot()
     , m_bp_yawRightButton(NULL)
     , m_bp_yawZeroButton(NULL)
 
+    , m_dropState(kDropOff)
+
     , m_autonomousActive(true)
     , m_autoSelectionD1(NULL)
     , m_autoSelectionD2(NULL)
