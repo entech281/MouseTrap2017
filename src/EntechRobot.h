@@ -41,6 +41,9 @@ protected:
 
 private:
     void DetermineAutonomousSetup(void);
+    void AbortGearDropAction(void);
+    void DoGearDropAction(void);
+    void StartGearDropAction(void);
     DriveSubsystem    *m_drive;
     ClimberSubsystem  *m_climber;
     ShooterSubsystem *m_shooter;
@@ -52,7 +55,7 @@ private:
     FILE *m_logFP;
 
     Joystick  *m_gamepad;
-	OperatorButton *m_gp_useShooterPID;
+    OperatorButton *m_gp_useShooterPID;
     OperatorButton *m_gp_climbButton;
     OperatorButton *m_gp_descendButton;
     OperatorButton *m_gp_dropButton;
@@ -72,8 +75,14 @@ private:
 
     std::list<RobotSubsystem*> m_robotSubsystems;
 
-    enum AutoDropState { kDropOff, kDropWaitForGearRelease, kDropBackoff, kDropRaise, kDropForward };
+    enum AutoDropState { kDropDone, kDropWaitForGearRelease,
+                         kDropBackoff, kWaitForDropBackoff,
+                         kDropRaise, kWaitForDropRaise,
+                         kDropForward, kWaitForDropForward,
+                         kDropBackup, kWaitForBackup
+   };
     AutoDropState m_dropState;
+    Timer *m_dropTimer;
 
     bool m_autonomousActive;
     frc::DigitalInput *m_autoSelectionD1;

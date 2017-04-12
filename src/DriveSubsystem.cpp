@@ -593,9 +593,9 @@ void DriveSubsystem::TeleopPeriodic()
     }
 
     // If operator is in autodrop mode and the gear has been dropped backup until operator lets go
-    if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
-        BackoffPin();
-    }
+    //if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
+    //    BackoffPin();
+    //}
     switch (m_currMode) {
     case kDeadRecon:
         DoDriveDeadRecon();

@@ -39,7 +39,8 @@ EntechRobot::EntechRobot()
     , m_bp_yawRightButton(NULL)
     , m_bp_yawZeroButton(NULL)
 
-    , m_dropState(kDropOff)
+    , m_dropState(kDropDone)
+    , m_dropTimer(NULL)
 
     , m_autonomousActive(true)
     , m_autoSelectionD1(NULL)
@@ -135,6 +136,9 @@ void EntechRobot::RobotInit()
         m_bp_yawZeroButton = new OperatorButton(m_buttonpanel,c_opyawzero_BTNid);
     }
 
+    m_dropState = kDropDone;
+    m_dropTimer = new frc::Timer();
+    
     m_autoState = kStart;
     m_autoTimer = new frc::Timer();
     m_autoSelectionD1 = new frc::DigitalInput(c_autoSelectorD1Channel);
@@ -299,7 +303,10 @@ void EntechRobot::TeleopPeriodic()
 
     if (IsInAutoDropMode()) {
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
+        StartGearDropAction();
+        DoGearDropAction();
     } else {
+        AbortGearDropAction();
         m_dropper->SetMode(DropperSubsystem::kManual);
         if ((m_gp_dropButton && m_gp_dropButton->GetBool()) ||
             (m_bp_dropButton && m_bp_dropButton->GetBool())    ) {
@@ -363,6 +370,73 @@ void EntechRobot::AutonomousInit()
     }
 
     UpdateDashboard();
+}
+
+void EntechRobot::AbortGearDropAction(void)
+{
+    m_dropState = kDropDone;
+}
+
+void EntechRobot::StartGearDropAction(void)
+{
+    if (m_dropState == kDropDone)
+        m_dropState = kDropWaitForGearRelease;
+}
+
+void EntechRobot::DoGearDropAction(void)
+{
+    if (m_dropState == kDropDone)
+        return;
+    
+    switch (m_dropState) {
+    case kDropDone:
+        break;
+    case kDropWaitForGearRelease:
+        if (m_dropper->IsGearDropped()) {
+            m_dropState = kDropBackoff;
+        }
+        break;
+    case kDropBackoff:
+        m_drive->DriveHeading(m_drive->GetRobotYaw(),-0.3,0.05);
+        m_dropState = kWaitForDropBackoff;
+        break;
+    case kWaitForDropBackoff:
+        if (m_drive->Done()) {
+            m_dropState = kDropRaise;
+        }
+        break;
+    case kDropRaise:
+        m_dropper->SetMode(DropperSubsystem::kManual);
+        m_dropper->SetPosition(DropperSubsystem::kUp);
+        m_dropTimer->Stop();
+        m_dropTimer->Reset();
+        m_dropTimer->Start();
+        m_dropState = kWaitForDropRaise;
+        break;
+    case kWaitForDropRaise:
+        if (m_dropTimer->Get() > 0.1) {
+            m_dropState = kDropForward;
+        }
+        break;
+    case kDropForward:
+        m_drive->DriveHeading(m_drive->GetRobotYaw(),0.3,0.07);
+        m_dropState = kWaitForDropForward;
+        break;
+    case kWaitForDropForward:
+        if (m_drive->Done() || m_dropper->IsPinSensed()) {
+            m_dropState = kDropBackup;
+        }
+        break;
+    case kDropBackup:
+        m_drive->DriveHeading(m_drive->GetRobotYaw(),-0.3,0.2);
+        m_dropState = kWaitForDropBackup;
+        break;
+    case kWaitForDropBackup:
+        if (m_drive->Done()) {
+            m_dropState = kDropDone;
+        }
+        break;
+    }
 }
 
 void EntechRobot::AutonomousPeriodic()

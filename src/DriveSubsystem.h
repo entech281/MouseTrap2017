@@ -36,6 +36,7 @@ public:
     bool AreTargetsVisible(void);
     void FieldAbsoluteDriving(bool active);
     void HoldYaw(bool active);
+    double GetRobotYaw(void);
     void SetYawDirection(double angle);
     bool IsYawCorrect(void);
     bool IsAlignmentCorrect(void);
@@ -63,7 +64,6 @@ private:
     void BackoffPin(void);
     void SetMode(DriveMode mode);
     void GetVisionData(void);
-    double GetRobotYaw(void);
     double NormalizeYaw(double yaw);
 
     EntechRobot *m_pRobot;
