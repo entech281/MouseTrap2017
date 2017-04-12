@@ -79,7 +79,7 @@ private:
                          kDropBackoff, kWaitForDropBackoff,
                          kDropRaise, kWaitForDropRaise,
                          kDropForward, kWaitForDropForward,
-                         kDropBackup, kWaitForBackup
+                         kDropBackup, kWaitForDropBackup
    };
     AutoDropState m_dropState;
     Timer *m_dropTimer;
