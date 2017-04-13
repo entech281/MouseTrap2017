@@ -27,11 +27,14 @@ public:
     virtual ~DriveSubsystem();
 
     void DriveHeading(double angle, double speed, double time);
+    void DriveRobotHeading(double angle, double speed, double time);
     void DriveToVisionTarget(double speed = 10.0, bool auto_yaw = true);
     void AlignWithTargetFacing(double yaw_angle, double lateral_speed);
     void AbortDriveToVisionTarget(void);
-    void NudgeLeft(void);
-    void NudgeRight(void);
+    void NudgeLeft(int count=1);
+    void NudgeRight(int count=1);
+    void NudgeForward(int count=1);
+    void NudgeBackward(int count=1);
     bool Done(void);
     bool AreTargetsVisible(void);
     void FieldAbsoluteDriving(bool active);
@@ -103,6 +106,7 @@ private:
     double m_yawJStwist;
     double m_lateralJS;
     double m_forwardJS;
+    int m_lastPOV;
     PidInterface  *m_yawPIDInterface;
     PidInterface  *m_lateralPIDInterface;
     PIDController *m_yawController;
@@ -118,6 +122,7 @@ private:
     double m_currentYawAngle;
 
     bool m_fieldAbsolute;
+    bool m_useFieldAbsForDeadRec;
 
     OperatorButton *m_fieldAbsoluteToggleButton;
     OperatorButton *m_holdYawToggleButton;

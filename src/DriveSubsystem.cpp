@@ -27,6 +27,7 @@ const double c_slowVisionSpeed = -0.15;
 const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
 const double c_stoppedVelocityTolerance = 0.001;
+
 const double c_nudgeSpeed = 0.5;
 const double c_nudgeTime = 0.1;
 
@@ -72,6 +73,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_yawJStwist(0.0)
     , m_lateralJS(0.0)
     , m_forwardJS(0.0)
+    , m_lastPOV(-1)
     , m_yawPIDInterface(NULL)
     , m_lateralPIDInterface(NULL)
     , m_yawController(NULL)
@@ -87,6 +89,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_currentYawAngle(0.0)
 
     , m_fieldAbsolute(true)
+    , m_useFieldAbsForDeadRec(true)
 
     , m_fieldAbsoluteToggleButton(NULL)
     , m_holdYawToggleButton(NULL)
@@ -257,20 +260,36 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
     m_timer->Start();
     m_currMode = kDeadRecon;
     m_allowStraffe = false;
+    m_useFieldAbsForDeadRec = true;
 }
 
-void DriveSubsystem::NudgeLeft(void)
+void DriveSubsystem::DriveRobotHeading(double angle, double speed, double time)
 {
-    double yaw = GetRobotYaw();
+    DriveHeading(double angle, double speed, double time);
+    m_useFieldAbsForDeadRec = false;
+}
+void DriveSubsystem::NudgeLeft(int count)
+{
     m_lateralController->Disable();
-    DriveHeading(yaw-90.0, c_nudgeSpeed, c_nudgeTime);
+    DriveRobotHeading(-90.0, c_nudgeSpeed, count*c_nudgeTime);
 }
 
-void DriveSubsystem::NudgeRight(void)
+void DriveSubsystem::NudgeRight(int count)
 {
-    double yaw = GetRobotYaw();
     m_lateralController->Disable();
-    DriveHeading(yaw+90.0, c_nudgeSpeed, c_nudgeTime);
+    DriveRobotHeading(+90.0, c_nudgeSpeed, count*c_nudgeTime);
+}
+
+void DriveSubsystem::NudgeForward(int count)
+{
+    m_lateralController->Disable();
+    DriveRobotHeading(0.0, 0.75*c_nudgeSpeed, count*c_nudgeTime);
+}
+
+void DriveSubsystem::NudgeBackward(int count)
+{
+    m_lateralController->Disable();
+    DriveRobotHeading(180.0, 0.75*c_nudgeSpeed, count*c_nudgeTime);
 }
 
 void DriveSubsystem::BackoffPin(void)
@@ -573,12 +592,25 @@ void DriveSubsystem::TeleopPeriodic()
     if (m_resetYawToZeroButton->Get() == OperatorButton::kJustPressed) {
         m_ahrs->ZeroYaw();
     }
-    if (m_nudgeLeftButton->Get() == OperatorButton::kJustPressed) {
+    int pov = -1;
+    if (m_joystick) {
+        pov = m_joystick->GetPOV();
+    }
+    if ((m_nudgeLeftButton->Get() == OperatorButton::kJustPressed) ||
+        ((m_lastPOV != 270) && (pov == 270))                         )  {
         NudgeLeft();
     }
-    if (m_nudgeRightButton->Get() == OperatorButton::kJustPressed) {
+    if ((m_nudgeRightButton->Get() == OperatorButton::kJustPressed) ||
+        ((m_lastPOV != 90) && (pov == 90))                            )  {
         NudgeRight();
     }
+    if ((m_lastPOV != 0) && (pov == 0)) {
+        NudgeForward();
+    }
+    if ((m_lastPOV != 180) && (pov == 180)) {
+        NudgeBackward();
+    }
+    m_lastPOV = pov;
     if (m_autoDriveButton->GetBool() && (m_visionTargetsFound || m_targetsBelowMinDistance)) {
         if (m_currMode != kAutomatic) {
             DriveToVisionTarget();
@@ -705,12 +737,12 @@ void DriveSubsystem::DoDriveDeadRecon()
     }
     gyroAngle = 0.0;
 #if NAVX
-    if (m_fieldAbsolute && m_ahrs) {
+    if (m_useFieldAbsForDeadRec && m_ahrs) {
         gyroAngle = GetRobotYaw();
     }
 #endif
 #if IMU_MXP
-    if (m_fieldAbsolute && m_imu) {
+    if (m_useFieldAbsForDeadRec && m_imu) {
         gyroAngle = m_imu->GetAngle();
     }
 #endif
