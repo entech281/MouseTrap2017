@@ -138,7 +138,7 @@ void EntechRobot::RobotInit()
 
     m_dropState = kDropDone;
     m_dropTimer = new frc::Timer();
-    
+
     m_autoState = kStart;
     m_autoTimer = new frc::Timer();
     m_autoSelectionD1 = new frc::DigitalInput(c_autoSelectorD1Channel);
@@ -389,7 +389,7 @@ void EntechRobot::DoGearDropAction(void)
 {
     if (m_dropState == kDropDone)
         return;
-    
+
     switch (m_dropState) {
     case kDropStart:
     case kDropDone:
@@ -465,38 +465,6 @@ void EntechRobot::AutonomousPeriodic()
             m_autoState = kInitialDrive;
         }
         break;
-#define CLASSIC_INITIAL_TURN 0
-#if CLASSIC_INITIAL_TURN
-    case kInitialDrive:
-        m_drive->FieldAbsoluteDriving(true);
-        m_drive->HoldYaw(true);
-        m_drive->SetYawDirection(0.0);
-        m_drive->DriveHeading(0.0, 0.4, 1.85);
-        m_autoState = kWaitForInitialDrive;
-        break;
-    case kWaitForInitialDrive:
-        if (m_drive->Done()) {
-            m_autoState = kInitialTurn;
-        }
-        break;
-    case kInitialTurn:
-        if (m_initialTurn == kRight60) {
-            m_drive->SetYawDirection(60.0);
-            m_drive->DriveHeading(60.0, 0.3, 0.35);
-            m_drive->HoldYaw(true);
-        } else if (m_initialTurn == kLeft60) {
-            m_drive->SetYawDirection(-60.0);
-            m_drive->DriveHeading(-60.0, 0.3, 0.35);
-            m_drive->HoldYaw(true);
-        }
-        m_autoState = kWaitForInitialTurn;
-        break;
-    case kWaitForInitialTurn:
-        if (m_drive->Done()) {
-            m_autoState = kDriveToTarget;
-        }
-        break;
-#else
     case kInitialDrive:
         m_drive->FieldAbsoluteDriving(true);
         m_drive->HoldYaw(true);
@@ -527,8 +495,9 @@ void EntechRobot::AutonomousPeriodic()
             m_autoState = kDriveToTarget;
         }
         break;
-#endif
     case kDriveToTarget:
+        ResetGearDropAction();
+        StartGearDropAction();
         m_dropper->SetMode(DropperSubsystem::kAutomatic);
         m_drive->DriveToVisionTarget(-0.22,true);
         m_autoState = kWaitForDriveToTarget;
@@ -542,11 +511,17 @@ void EntechRobot::AutonomousPeriodic()
             m_autoTimer->Stop();
             m_autoTimer->Reset();
         }
-        if (m_dropper->IsGearDropped()) {
+        DoGearDropAction();
+        if (m_dropState == kDropDone) {
             m_autoState = kDriveBackward;
             m_autoTimer->Stop();
             m_autoTimer->Reset();
         }
+//        if (m_dropper->IsGearDropped()) {
+//            m_autoState = kDriveBackward;
+//            m_autoTimer->Stop();
+//            m_autoTimer->Reset();
+//        }
         if (m_autoTimer->Get() > dropTimeout) {
             m_autoNeedsSecondTry = true;
             m_autoState = kDriveBackward;
