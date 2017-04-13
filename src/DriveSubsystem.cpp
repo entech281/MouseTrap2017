@@ -27,8 +27,8 @@ const double c_slowVisionSpeed = -0.15;
 const double c_yawTolerance = 3.0;
 const double c_lateralTolerence = 5.0;
 const double c_stoppedVelocityTolerance = 0.001;
-const double c_nudgeSpeed = 0.2;
-const double c_nudgeTime = 0.05;
+const double c_nudgeSpeed = 0.5;
+const double c_nudgeTime = 0.1;
 
 const static double kYaw_P = 0.03;
 const static double kYaw_I = 0.0001;
@@ -408,6 +408,7 @@ void DriveSubsystem::SetYawDirection(double angle)
 {
     m_yawAngle = angle;
 #if NAVX || IMU_MXP
+    m_yawController->Disable();
     m_yawController->SetSetpoint(m_yawAngle);
 #endif
     if (m_inAutonomous)
@@ -584,12 +585,12 @@ void DriveSubsystem::TeleopPeriodic()
         }
         m_currMode = kAutomatic;
     } else {
-        if (m_currMode != kManual) {
+        if (m_currMode == kAutomatic) {
             AbortDriveToVisionTarget();
+            m_targetsBelowMinDistance = false;
+            m_currMode = kManual;
+            m_lateralController->Disable();
         }
-        m_targetsBelowMinDistance = false;
-        m_currMode = kManual;
-        m_lateralController->Disable();
     }
 
     // If operator is in autodrop mode and the gear has been dropped backup until operator lets go
@@ -837,6 +838,7 @@ void DriveSubsystem::UpdateDashboard(void)
     SmartDashboard::PutNumber("JoystickY", m_joystick->GetY());
     SmartDashboard::PutBoolean("Yaw Controller Enabled", m_yawController->IsEnabled());
     SmartDashboard::PutNumber("Robot Yaw2", GetRobotYaw());
+    SmartDashboard::PutNumber("currentYawAngle (PID in)", m_currentYawAngle);
     SmartDashboard::PutBoolean("Lateral Controller Enabled", m_lateralController->IsEnabled());
     SmartDashboard::PutNumber("Drive HoldYaw Angle", m_yawAngle);
 }

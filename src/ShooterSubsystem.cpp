@@ -12,13 +12,13 @@ ShooterSubsystem::ShooterSubsystem(EntechRobot *pRobot, std::string name)
     , m_solenoid1(NULL)
     , m_solenoid2(NULL)
     , m_mode(kVbus)
-    , m_shoot(false)
+    , m_shoot(true)
     , m_speed(0.0)
     , m_rpm(0.0)
     , m_pidF(1.55)
-    , m_pidP(18.0)
+    , m_pidP(22.0)
     , m_pidI(0.0)
-    , m_pidD(0.0)
+    , m_pidD(800.0)
 {
 }
 
@@ -53,12 +53,12 @@ bool ShooterSubsystem::IsAtTargetRPM(void)
 
 void ShooterSubsystem::TriggerOpen(void)
 {
-    m_shoot = true;
+    m_shoot = false;
 }
 
 void ShooterSubsystem::TriggerClose(void)
 {
-    m_shoot = false;
+    m_shoot = true;
 }
 
 void ShooterSubsystem::RobotInit()
@@ -118,12 +118,12 @@ void ShooterSubsystem::TeleopInit()
 {
     m_ShooterMotor->SetControlMode(CANSpeedController::kPercentVbus);
     SetPIDController();
-    m_shoot = false;
+    m_shoot = true;
 }
 
 void ShooterSubsystem::AutonomousInit()
 {
-    m_shoot = false;
+    m_shoot = true;
 }
 
 void ShooterSubsystem::TestInit()
@@ -132,7 +132,7 @@ void ShooterSubsystem::TestInit()
 
 void ShooterSubsystem::DisabledInit()
 {
-    m_shoot = false;
+    m_shoot = true;
 }
 
 void ShooterSubsystem::DisabledPeriodic()

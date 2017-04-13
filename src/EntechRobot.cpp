@@ -6,7 +6,7 @@
 #define LOG_FILE "/home/lvuser/EntechRobotLog.csv"
 
 const double c_shooterSpeedNear = 1500.0;
-const double c_shooterSpeedMiddle = 3200.0;
+const double c_shooterSpeedMiddle = 3100.0;
 const double c_shooterSpeedFar = 4350.0;
 const double c_shooterSpeedSide = 3000.0;
 
@@ -302,11 +302,13 @@ void EntechRobot::TeleopPeriodic()
     }
 
     if (IsInAutoDropMode()) {
-        m_dropper->SetMode(DropperSubsystem::kAutomatic);
+        if ((m_dropState == kDropStart) || (m_dropState == kDropWaitForGearRelease)) {
+            m_dropper->SetMode(DropperSubsystem::kAutomatic);
+        }
         StartGearDropAction();
         DoGearDropAction();
     } else {
-        AbortGearDropAction();
+        ResetGearDropAction();
         m_dropper->SetMode(DropperSubsystem::kManual);
         if ((m_gp_dropButton && m_gp_dropButton->GetBool()) ||
             (m_bp_dropButton && m_bp_dropButton->GetBool())    ) {
@@ -372,14 +374,14 @@ void EntechRobot::AutonomousInit()
     UpdateDashboard();
 }
 
-void EntechRobot::AbortGearDropAction(void)
+void EntechRobot::ResetGearDropAction(void)
 {
-    m_dropState = kDropDone;
+    m_dropState = kDropStart;
 }
 
 void EntechRobot::StartGearDropAction(void)
 {
-    if (m_dropState == kDropDone)
+    if (m_dropState == kDropStart)
         m_dropState = kDropWaitForGearRelease;
 }
 
@@ -389,6 +391,7 @@ void EntechRobot::DoGearDropAction(void)
         return;
     
     switch (m_dropState) {
+    case kDropStart:
     case kDropDone:
         break;
     case kDropWaitForGearRelease:
@@ -397,7 +400,7 @@ void EntechRobot::DoGearDropAction(void)
         }
         break;
     case kDropBackoff:
-        m_drive->DriveHeading(m_drive->GetRobotYaw(),-0.3,0.05);
+        m_drive->DriveHeading(m_drive->GetRobotYaw(),-0.55,0.18);
         m_dropState = kWaitForDropBackoff;
         break;
     case kWaitForDropBackoff:
@@ -414,12 +417,14 @@ void EntechRobot::DoGearDropAction(void)
         m_dropState = kWaitForDropRaise;
         break;
     case kWaitForDropRaise:
-        if (m_dropTimer->Get() > 0.1) {
+        if (m_dropTimer->Get() > 0.25) {
             m_dropState = kDropForward;
+            m_dropTimer->Stop();
+            m_dropTimer->Reset();
         }
         break;
     case kDropForward:
-        m_drive->DriveHeading(m_drive->GetRobotYaw(),0.3,0.07);
+        m_drive->DriveHeading(m_drive->GetRobotYaw(),0.5,0.30);
         m_dropState = kWaitForDropForward;
         break;
     case kWaitForDropForward:
@@ -428,7 +433,7 @@ void EntechRobot::DoGearDropAction(void)
         }
         break;
     case kDropBackup:
-        m_drive->DriveHeading(m_drive->GetRobotYaw(),-0.3,0.2);
+        m_drive->DriveHeading(m_drive->GetRobotYaw(),-0.65,0.3);
         m_dropState = kWaitForDropBackup;
         break;
     case kWaitForDropBackup:

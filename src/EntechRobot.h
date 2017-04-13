@@ -41,7 +41,7 @@ protected:
 
 private:
     void DetermineAutonomousSetup(void);
-    void AbortGearDropAction(void);
+    void ResetGearDropAction(void);
     void DoGearDropAction(void);
     void StartGearDropAction(void);
     DriveSubsystem    *m_drive;
@@ -75,11 +75,11 @@ private:
 
     std::list<RobotSubsystem*> m_robotSubsystems;
 
-    enum AutoDropState { kDropDone, kDropWaitForGearRelease,
+    enum AutoDropState { kDropStart, kDropWaitForGearRelease,
                          kDropBackoff, kWaitForDropBackoff,
                          kDropRaise, kWaitForDropRaise,
                          kDropForward, kWaitForDropForward,
-                         kDropBackup, kWaitForDropBackup
+                         kDropBackup, kWaitForDropBackup, kDropDone
    };
     AutoDropState m_dropState;
     Timer *m_dropTimer;
