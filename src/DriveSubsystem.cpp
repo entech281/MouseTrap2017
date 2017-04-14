@@ -33,7 +33,7 @@ const double c_nudgeTime = 0.1;
 
 const static double kYaw_P = 0.03;
 const static double kYaw_I = 0.0001;
-const static double kYaw_D = 0.0;
+const static double kYaw_D = 0.01;
 const static double kYaw_ToleranceDegrees = 2.0;
 
 const static double kLateral_P = -0.1;
@@ -69,6 +69,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
     , m_visionDistance(100.0)
     , m_straffeSpeed(0.0)
     , m_allowStraffe(false)
+    , m_pinSeenInAutoAlign(false)
     , m_inAutonomous(false)
     , m_yawJStwist(0.0)
     , m_lateralJS(0.0)
@@ -265,7 +266,7 @@ void DriveSubsystem::DriveHeading(double angle, double speed, double time)
 
 void DriveSubsystem::DriveRobotHeading(double angle, double speed, double time)
 {
-    DriveHeading(double angle, double speed, double time);
+    DriveHeading(angle, speed, time);
     m_useFieldAbsForDeadRec = false;
 }
 void DriveSubsystem::NudgeLeft(int count)
@@ -335,6 +336,7 @@ void DriveSubsystem::DriveToVisionTarget(double speed, bool auto_yaw)
     m_forwardJS = speed;
 
     m_allowStraffe = false;
+    m_pinSeenInAutoAlign = false;
     m_currMode = kAutomatic;
 
     // If RPi is not found, we are going to try anyway for a max number of seconds.
@@ -364,7 +366,7 @@ bool DriveSubsystem::AreTargetsVisible()
             m_vTimer->Reset();
             m_vTimer->Start();
         }
-        if (m_vTimerRunning && (m_vTimer->Get() > 1.0)) {
+        if (m_vTimerRunning && (m_vTimer->Get() > 0.75)) {
             m_vTimer->Stop();
             m_vTimerRunning = false;
             return true;
@@ -612,23 +614,28 @@ void DriveSubsystem::TeleopPeriodic()
     }
     m_lastPOV = pov;
     if (m_autoDriveButton->GetBool() && (m_visionTargetsFound || m_targetsBelowMinDistance)) {
-        if (m_currMode != kAutomatic) {
-            DriveToVisionTarget();
+        if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
+            m_pinSeenInAutoAlign = true;
+            AbortDriveToVisionTarget();
+            m_targetsBelowMinDistance = false;
+            m_lateralController->Disable();
+            m_currMode = kManual;
         }
-        m_currMode = kAutomatic;
+        if ((m_currMode != kAutomatic) && (!m_pinSeenInAutoAlign)) {
+            DriveToVisionTarget();
+            m_currMode = kAutomatic;
+        }
     } else {
+        m_pinSeenInAutoAlign = false;
         if (m_currMode == kAutomatic) {
             AbortDriveToVisionTarget();
             m_targetsBelowMinDistance = false;
-            m_currMode = kManual;
             m_lateralController->Disable();
+            m_currMode = kManual;
         }
     }
 
     // If operator is in autodrop mode and the gear has been dropped backup until operator lets go
-    //if (m_pRobot->IsInAutoDropMode() && m_pRobot->IsGearDropped()) {
-    //    BackoffPin();
-    //}
     switch (m_currMode) {
     case kDeadRecon:
         DoDriveDeadRecon();

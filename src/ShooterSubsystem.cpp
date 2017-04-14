@@ -86,9 +86,9 @@ void ShooterSubsystem::SetPIDController(void)
 {
     Preferences *prefs = frc::Preferences::GetInstance();
     m_pidF = prefs->GetDouble("shooterF", 1.55);
-    m_pidP = prefs->GetDouble("shooterP", 18.0);
+    m_pidP = prefs->GetDouble("shooterP", 22.0);
     m_pidI = prefs->GetDouble("shooterI", 0.0);
-    m_pidD = prefs->GetDouble("shooterD", 0.0);
+    m_pidD = prefs->GetDouble("shooterD", 800.0);
     m_ShooterMotor->SelectProfileSlot(0);
     m_ShooterMotor->SetF(m_pidF);
     m_ShooterMotor->SetP(m_pidP);

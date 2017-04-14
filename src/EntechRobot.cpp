@@ -477,7 +477,7 @@ void EntechRobot::AutonomousPeriodic()
         m_drive->FieldAbsoluteDriving(true);
         m_drive->HoldYaw(true);
         m_drive->SetYawDirection(InitialYaw());
-        m_drive->DriveHeading(0.0, 0.35, 0.92);
+        m_drive->DriveHeading(0.0, 0.35, 0.75);
         m_autoState = kWaitForInitialDrive;
         break;
     case kWaitForInitialDrive:
@@ -488,11 +488,11 @@ void EntechRobot::AutonomousPeriodic()
     case kInitialTurn:
         if (m_initialTurn == kRight60) {
             m_drive->SetYawDirection(60.0);
-            m_drive->DriveHeading(-25.0, 0.38, 8.0);
+            m_drive->DriveHeading(-25.0, 0.35, 8.0);
             m_drive->HoldYaw(true);
         } else if (m_initialTurn == kLeft60) {
             m_drive->SetYawDirection(-60.0);
-            m_drive->DriveHeading(25.0, 0.38, 8.0);
+            m_drive->DriveHeading(25.0, 0.35, 8.0);
             m_drive->HoldYaw(true);
         }
         m_autoState = kWaitForInitialTurn;
@@ -514,7 +514,7 @@ void EntechRobot::AutonomousPeriodic()
         m_autoTimer->Start();
         break;
     case kWaitForDriveToTarget:
-        if (m_dropper->IsPinSensed()) {
+        if (m_dropper->IsPinSensed() && !m_dropper->IsGearDropped()) {
             m_drive->DriveHeading(0.0,0.0,0.0);
             m_autoTimer->Stop();
             m_autoTimer->Reset();
@@ -538,13 +538,13 @@ void EntechRobot::AutonomousPeriodic()
     case kDriveBackward:
         switch (m_initialTurn) {
         case kLeft60:
-            m_drive->DriveHeading(120.0, 0.35, 1.5);
+            m_drive->DriveHeading(120.0, 0.35, 0.5);
             break;
         case kRight60:
-            m_drive->DriveHeading(-120.0, 0.35, 1.5);
+            m_drive->DriveHeading(-120.0, 0.35, 0.5);
             break;
         case kStraight:
-            m_drive->DriveHeading(180.0, 0.35, 0.7);
+            m_drive->DriveHeading(180.0, 0.30, 0.1);
             break;
         }
         m_autoState = kWaitForDriveBackward;
@@ -647,6 +647,7 @@ void EntechRobot::AutonomousPeriodic()
         break;
     case kDriveForward:
         m_drive->SetYawDirection(0.0);
+        m_drive->HoldYaw(true);
         switch (m_initialTurn) {
         case kLeft60:
         case kRight60:

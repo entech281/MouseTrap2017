@@ -97,6 +97,7 @@ private:
     double m_visionDistance;
     double m_straffeSpeed;
     bool   m_allowStraffe;
+    bool   m_pinSeenInAutoAlign;
     bool   m_inAutonomous;
 
     double m_yawWhenTargetsLastSeen;
