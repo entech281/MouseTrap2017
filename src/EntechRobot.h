@@ -102,9 +102,14 @@ private:
                      kAlignToTarget, kWaitForAlignToTarget,
                      kBackupToEndWall, kWaitForBackupToEndWall,
                      kBackupToWall, kWaitForBackupToWall,
+                     kNudgeBack, kWaitForNudgeBack,
+                     kNudgeSide, kWaitForNudgeSide,
                      kDone };
     AutoState m_autoState;
-    bool m_autoNeedsSecondTry;
+    bool m_autoSecondTry;
+    enum AutoNudgeDirection { kLeft, kRight };
+    int m_autoNudgeCount;
+    AutoNudgeDirection m_autoNudgeDir;
     enum BoilerDistance { kNear, kMiddle, kFar, kSiderail };
     BoilerDistance m_boilerDistance;
     enum InitialTurn { kRight60, kStraight, kLeft60 };

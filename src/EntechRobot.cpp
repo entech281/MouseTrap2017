@@ -47,7 +47,9 @@ EntechRobot::EntechRobot()
     , m_autoSelectionD2(NULL)
     , m_autoSelectionD3(NULL)
     , m_autoState(kStart)
-    , m_autoNeedsSecondTry(false)
+    , m_autoSecondTry(false)
+    , m_autoNudgeCount(0)
+    , m_autoNudgeDir(kLeft)
     , m_boilerDistance(kMiddle)
     , m_initialTurn(kStraight)
     , m_boilerToLeft(false)
@@ -354,7 +356,10 @@ void EntechRobot::TeleopPeriodic()
 void EntechRobot::AutonomousInit()
 {
     m_autonomousActive = true;
-    m_autoNeedsSecondTry = false;
+    m_autoSecondTry = false;
+    m_autoNudgeDir = kLeft;
+    m_autoNudgeCount = 0;
+    
     DetermineAutonomousSetup();
 
     if (m_autonomousActive) {
@@ -452,6 +457,9 @@ void EntechRobot::AutonomousPeriodic()
     if (m_initialTurn == kStraight) {
         dropTimeout = 6.0;
     }
+    if (m_autoSecondTry) {
+        dropTimeout = 2.0;
+    }
     switch(m_autoState) {
     case kStart:
         // gear first -- if in middle
@@ -523,8 +531,8 @@ void EntechRobot::AutonomousPeriodic()
 //            m_autoTimer->Reset();
 //        }
         if (m_autoTimer->Get() > dropTimeout) {
-            m_autoNeedsSecondTry = true;
-            m_autoState = kDriveBackward;
+            m_autoSecondTry = true;
+            m_autoState = kNudgeBack;
         }
         break;
     case kDriveBackward:
@@ -558,10 +566,13 @@ void EntechRobot::AutonomousPeriodic()
                 m_autoState = kBackupToEndWall;
                 break;
             }
-            if (m_autoNeedsSecondTry) {
-                m_autoNeedsSecondTry = false;
+/*  Do Nudge Instead
+            if (m_autoSecondTry) {
+                m_autoSecondTry = false;
                 m_autoState = kDriveToTarget;
             }
+*/
+            m_autoSecondTry = false;
         }
         break;
     case kBackupToEndWall:
@@ -690,6 +701,36 @@ void EntechRobot::AutonomousPeriodic()
         m_autoTimer->Reset();
         m_autoTimer->Start();
         m_autoState = kWaitForBackupToWall;
+        break;
+    case kNudgeBack:
+        m_autoSecondTry = true;
+        m_drive->NudgeBackward();
+        m_autoState = kWaitForNudgeBack;
+        break;
+    case kWaitForNudgeBack:
+        if (m_drive->Done()) {
+            m_autoState = kNudgeSide;
+        }
+        break;
+    case kNudgeSide:
+        ++m_autoNudgeCount;
+        if (m_autoNudgeDir == kLeft) {
+            m_drive->NudgeLeft(m_autoNudgeCount);
+            m_autoNudgeDir = kRight;
+        } else {
+            m_drive->NudgeRight(m_autoNudgeCount);
+            m_autoNudgeDir = kLeft;
+        }
+        m_autoState = kWaitForNudgeSide;
+        break;
+    case kWaitForNudgeSide:
+        if (m_drive->Done()) {
+            m_drive->DriveRobotHeading(0.0,0.25,2.0);
+            m_autoTimer->Stop();
+            m_autoTimer->Reset();
+            m_autoTimer->Start();
+            m_autoState = kWaitForDriveToTarget;
+        }
         break;
     case kWaitForBackupToWall:
         if ((m_autoTimer->Get() > 0.5) && m_drive->Stopped()) {
