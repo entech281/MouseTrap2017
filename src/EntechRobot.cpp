@@ -53,6 +53,7 @@ EntechRobot::EntechRobot()
     , m_boilerDistance(kMiddle)
     , m_initialTurn(kStraight)
     , m_boilerToLeft(false)
+    , m_yawZeroed(false)
     , m_autoTimer(NULL)
 
 
@@ -243,9 +244,16 @@ bool EntechRobot::IsInAutoDropMode(void)
 
 double EntechRobot::InitialYaw(void)
 {
+    if (m_yawZeroed)
+        return 0.0;
     if ((m_boilerDistance == kFar) && m_boilerToLeft)
     	return 180.0;
 	return 0.0;
+}
+
+void EntechRobot::ZeroInitialYaw(void)
+{
+    m_yawZeroed = true;
 }
 
 void EntechRobot::DisabledInit()

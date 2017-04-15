@@ -22,6 +22,7 @@ public:
     bool IsPinSensed(void);
     bool IsInAutoDropMode(void);
     double InitialYaw(void);
+    void ZeroInitialYaw(void);
 
 protected:
     void UpdateDashboard();
@@ -115,6 +116,7 @@ private:
     enum InitialTurn { kRight60, kStraight, kLeft60 };
     InitialTurn m_initialTurn;
     bool m_boilerToLeft;
+    bool m_yawZeroed;
     frc::Timer *m_autoTimer;
 
     Preferences *m_prefs;

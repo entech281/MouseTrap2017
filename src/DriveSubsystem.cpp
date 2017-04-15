@@ -593,6 +593,7 @@ void DriveSubsystem::TeleopPeriodic()
     }
     if (m_resetYawToZeroButton->Get() == OperatorButton::kJustPressed) {
         m_ahrs->ZeroYaw();
+        m_pRobot->ZeroInitialYaw();
     }
     int pov = -1;
     if (m_joystick) {
