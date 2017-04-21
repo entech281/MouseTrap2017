@@ -624,7 +624,7 @@ void EntechRobot::AutonomousPeriodic()
         m_autoState = kWaitForShootFuelLoad;
         break;
     case kWaitForShootFuelLoad:
-        if (m_autoTimer->Get() > 4.0) {
+        if (m_autoTimer->Get() > 4.5) {
             m_shooter->Forward(0.0);
             m_shooter->TriggerClose();
             if (m_initialTurn == kStraight) {

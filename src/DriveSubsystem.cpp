@@ -284,13 +284,13 @@ void DriveSubsystem::NudgeRight(int count)
 void DriveSubsystem::NudgeForward(int count)
 {
     m_lateralController->Disable();
-    DriveRobotHeading(0.0, 0.75*c_nudgeSpeed, count*c_nudgeTime);
+    DriveRobotHeading(0.0, 0.75*c_nudgeSpeed, 2.0*count*c_nudgeTime);
 }
 
 void DriveSubsystem::NudgeBackward(int count)
 {
     m_lateralController->Disable();
-    DriveRobotHeading(180.0, 0.75*c_nudgeSpeed, count*c_nudgeTime);
+    DriveRobotHeading(180.0, 0.75*c_nudgeSpeed, 2.0*count*c_nudgeTime);
 }
 
 void DriveSubsystem::BackoffPin(void)
