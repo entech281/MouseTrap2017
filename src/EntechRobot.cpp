@@ -9,6 +9,7 @@ const double c_shooterSpeedNear = 1500.0;
 const double c_shooterSpeedMiddle = 3100.0;
 const double c_shooterSpeedFar = 4350.0;
 const double c_shooterSpeedSide = 3000.0;
+const double c_shooterTimeMax = 4.5;
 
 // Sample do nothing change
 
@@ -59,6 +60,7 @@ EntechRobot::EntechRobot()
 
     , m_prefs(NULL)
     , m_shooterSpeed(0.0)
+    , m_shooterTime(4.5)
 {
     m_robotSubsystems.clear();
     NetworkTable::SetServerMode();
@@ -221,6 +223,9 @@ void EntechRobot::DetermineAutonomousSetup(void)
         m_shooterSpeed = m_prefs->GetDouble("shooterSpeedSide", c_shooterSpeedSide);
         break;
     }
+    m_shooterTime = m_prefs->GetDouble("shooterTime",c_shooterTimeMax);
+    if (m_shooterTime > c_shooterTimeMax)
+        m_shooterTime = c_shooterTimeMax;
 }
 
 bool EntechRobot::IsGearDropped(void)
@@ -624,7 +629,7 @@ void EntechRobot::AutonomousPeriodic()
         m_autoState = kWaitForShootFuelLoad;
         break;
     case kWaitForShootFuelLoad:
-        if (m_autoTimer->Get() > 4.5) {
+        if (m_autoTimer->Get() > m_shooterTime) {
             m_shooter->Forward(0.0);
             m_shooter->TriggerClose();
             if (m_initialTurn == kStraight) {
