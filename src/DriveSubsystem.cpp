@@ -54,6 +54,7 @@ DriveSubsystem::DriveSubsystem(EntechRobot *pRobot, std::string name)
 
 #if NAVX
     , m_ahrs(NULL)
+    , m_navxOk(true)
 #endif
 #if IMU_MXP
     , m_imu(NULL)
@@ -117,8 +118,10 @@ void DriveSubsystem::RobotInit()
         m_ahrs = new AHRS(SerialPort::Port::kUSB);
         DriverStation::ReportWarning("NavX USB found");
         m_ahrs->Reset();
+        m_navxOk = true;
     } catch (std::exception& ex) {
         DriverStation::ReportError("NavX USB MISSING");
+        m_navxOk = false;
         m_ahrs = NULL;
     }
 #endif
@@ -127,8 +130,10 @@ void DriveSubsystem::RobotInit()
         m_ahrs = new AHRS(SPI::kMXP);
         DriverStation::ReportWarning("NavX MXP found");
         m_ahrs->Reset();
+        m_navxOk = true;
     } catch (std::exception& ex) {
         DriverStation::ReportError("NavX MXP MISSING");
+        m_navxOk = false;
         m_ahrs = NULL;
     }
 #endif
@@ -237,8 +242,11 @@ void DriveSubsystem::AutonomousInit()
     m_currMode = kManual;
     m_targetsBelowMinDistance = false;
 #if NAVX
-    m_ahrs->ZeroYaw();
-    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
+    m_currentYawAngle = 0.0;
+    if (m_ahrs && m_navxOk) {
+        m_ahrs->ZeroYaw();
+        m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
+    }
 #endif
     SmartDashboard::PutBoolean("Pi seen in Autonomous",false);
 }
@@ -399,7 +407,7 @@ bool DriveSubsystem::Done(void)
 bool DriveSubsystem::Stopped(void)
 {
 #if NAVX
-    if (m_ahrs) {
+    if (m_ahrs && m_navxOk) {
         if (fabs(m_ahrs->GetVelocityX()) < c_stoppedVelocityTolerance) {
             return true;
         }
@@ -534,7 +542,8 @@ void DriveSubsystem::GetVisionData()
 void DriveSubsystem::DisabledPeriodic()
 {
     GetVisionData();
-    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
+    if (m_ahrs && m_navxOk)
+        m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
     SmartDashboard::PutString("Drive Routine", "DisabledPeriodic");
     SmartDashboard::PutNumber("jsX", 0.0);
     SmartDashboard::PutNumber("jsY", 0.0);
@@ -545,7 +554,7 @@ void DriveSubsystem::DisabledPeriodic()
 double DriveSubsystem::GetRobotYaw(void)
 {
 #if NAVX
-    if (m_ahrs)
+    if (m_ahrs && m_navxOk)
         return NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
 #endif
 #if IMU_MXP
@@ -568,7 +577,17 @@ double DriveSubsystem::NormalizeYaw(double yaw)
 void DriveSubsystem::TeleopPeriodic()
 {
     GetVisionData();
-    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
+
+#ifdef NAVX
+    if (m_ahrs->IsConnected()) {
+        m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
+        m_navxOk = true;
+    } else {
+        m_currentYawAngle = 0.0;
+        m_navxOk = false;
+        m_yawController->Disable();
+    }
+#endif
 
     // This is teleop, so manage driver inputs here
     if (m_fieldAbsoluteToggleButton->Get() == OperatorButton::kJustPressed) {
@@ -663,7 +682,10 @@ void DriveSubsystem::TeleopPeriodic()
 void DriveSubsystem::AutonomousPeriodic()
 {
     GetVisionData();
-    m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
+
+    m_currentYawAngle = 0.0;
+    if (m_ahrs && m_navxOk)
+        m_currentYawAngle = NormalizeYaw(m_ahrs->GetYaw() - m_pRobot->InitialYaw());
     if (m_missingRPiCount == 0) {
         SmartDashboard::PutBoolean("Pi seen in Autonomous",true);
     }
@@ -745,7 +767,7 @@ void DriveSubsystem::DoDriveDeadRecon()
     }
     gyroAngle = 0.0;
 #if NAVX
-    if (m_useFieldAbsForDeadRec && m_ahrs) {
+    if (m_useFieldAbsForDeadRec && m_ahrs && m_navxOk) {
         gyroAngle = GetRobotYaw();
     }
 #endif
@@ -794,7 +816,7 @@ void DriveSubsystem::DoDriveManual()
 
     gyroAngle = 0.0;
 #if NAVX
-    if (m_fieldAbsolute && m_ahrs) {
+    if (m_fieldAbsolute && m_ahrs && m_navxOk) {
         gyroAngle = GetRobotYaw();
     }
 #endif
@@ -836,16 +858,20 @@ void DriveSubsystem::LogHeader(FILE *fp)
 
 void DriveSubsystem::LogData(FILE *fp)
 {
+    double yaw;
+    yaw = 0.0;
+    if (m_ahrs && m_navxOk)
+        yaw = m_ahrs->GetYaw();
     fprintf(fp,"%d,%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,",m_rpi_seq,m_missingRPiCount,
             m_visionTargetsFound,m_targetsBelowMinDistance,m_visionLateral,m_visionDistance,
-            m_forwardJS,m_lateralJS,m_yawJStwist,m_yawAngle,m_ahrs->GetYaw());
+            m_forwardJS,m_lateralJS,m_yawJStwist,m_yawAngle,yaw);
 }
 
 void DriveSubsystem::UpdateDashboard(void)
 {
 #if NAVX || IMU_MXP
 #if NAVX
-    if (m_ahrs) {
+    if (m_ahrs && m_navxOk) {
         SmartDashboard::PutData("NavX", m_ahrs);
         SmartDashboard::PutString("Gyro Type", "NAVX");
         SmartDashboard::PutNumber("GetAngle()", m_ahrs->GetAngle()); //total accumulated yaw angle, 360+
