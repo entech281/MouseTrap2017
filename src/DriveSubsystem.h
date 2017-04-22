@@ -80,6 +80,7 @@ private:
 
 #if NAVX
     AHRS *m_ahrs;
+    bool m_navxOk;
 #endif
 #if IMU_MXP
     ADIS16448_IMU *m_imu;
