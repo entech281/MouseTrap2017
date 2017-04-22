@@ -121,4 +121,5 @@ private:
 
     Preferences *m_prefs;
     double m_shooterSpeed;
+    double m_shooterTime;
 };
